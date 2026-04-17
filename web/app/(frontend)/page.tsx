@@ -19,6 +19,12 @@ const tools = [
     desc: "Capitalizare lunară sau la scadență, impozit 10% pe dobândă, contribuții recurente opționale.",
     tag: "Economii",
   },
+  {
+    href: "/tools/investitii",
+    title: "Investiții ETF",
+    desc: "Acumulare DCA pe termen lung. Randament brut minus TER, comisioane broker și impozit pe câștig. CAGR net.",
+    tag: "Investiții",
+  },
 ];
 
 const principles = [
@@ -76,12 +82,12 @@ export default function Home() {
               Unelte
             </div>
             <h2 className="font-serif text-3xl md:text-4xl mt-2 tracking-tight">
-              Trei calculatoare, un singur limbaj.
+              Patru calculatoare, un singur limbaj.
             </h2>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {tools.map((t, i) => (
             <Link
               key={t.href}

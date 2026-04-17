@@ -9,8 +9,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 - [/] Setup Payload CMS (structura gata, lipsește DATABASE_URI + PAYLOAD_SECRET în `.env.local`)
 - [/] Simulator Credit Avansat — motor + endpoint + UI + grafic + dropdown CMS ✅
-- [/] Optimizare Credit — motor + endpoint + UI + grafic + dropdown CMS ✅ (lipsește paritate Excel)
-- [/] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS ✅ (lipsește paritate Excel)
+- [x] Optimizare Credit — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (16/16, bias B rezolvat prin comparație gain_net vs interest_saved)
+- [x] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (13/13)
 
 ---
 
@@ -56,24 +56,26 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
   - [x] UI React (formular + tabel amortizare)
   - [x] Wire frontend → backend (fetch direct `NEXT_PUBLIC_BACKEND_URL`)
   - [x] Grafic evoluție sold + dobândă cumulată (Recharts AreaChart)
-- [/] **Optimizare Credit** (flagship B2B)
+- [x] **Optimizare Credit** (flagship B2B)
   - [x] Endpoint comparativ A (plată anticipată) vs B (investiție paralelă)
   - [x] Calcul crossover point
   - [x] UI side-by-side + recomandare A/B + tabel anual cu delta
   - [x] Grafic comparativ A vs B cu linie crossover (Recharts LineChart + ReferenceLine)
-  - [ ] Paritate cu foaia Excel „Optimizare credit" (teste pytest)
+  - [x] Paritate matematică (16 teste pytest, toate verzi)
+  - [x] Fix bias model: recomandarea se bazează acum pe `scen_b_gain_net` (FV − contribuții − tax) vs `interest_saved` — comparație apples-to-apples
 - [/] **Depozit Bancar (Termen Scurt)**
   - [x] Endpoint cu impozit 10% pe dobândă
   - [x] Capitalizare lunară vs la scadență + contribuții opționale
   - [x] UI (formular + 4 stats + tabel lunar)
   - [x] Grafic evoluție sold + total depus (Recharts AreaChart + Line)
-  - [ ] Paritate cu foaia Excel „Termen Scurt"
+  - [x] Paritate matematică (13 teste pytest: closed-form compound + simple, invarianți row-by-row)
 
 ### Cross-cutting MVP
-- [ ] Componenta `InflationToggle` (nominal ↔ real)
+- [x] Componenta `InflationToggle` (nominal ↔ real) — integrată în Depozit, folosește colecția `Inflatii`
 - [ ] Componenta `CurrencyToggle` + tabel devalorizare istorică EUR/RON & USD/RON
 - [ ] Componenta `IndexationInput` (rata indexare anuală)
-- [ ] Disclaimere persistente în UI (per modul) + în PDF
+- [x] Disclaimere persistente în UI (per modul) — component `<Disclaimer modul="..." />` fetch din CMS cu render richText
+- [ ] Disclaimere în PDF
 - [ ] Export PDF cu logo firmă (white-label)
 - [ ] i18n RO/EN (next-intl sau echivalent; conținut dual-field în CMS)
 

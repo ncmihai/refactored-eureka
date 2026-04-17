@@ -207,7 +207,7 @@ export function TableCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Disclaimer({ children }: { children: React.ReactNode }) {
+export function DisclaimerNote({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-xs text-[var(--muted)] italic leading-relaxed">
       {children}

@@ -13,9 +13,21 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Disclaimer } from "@/components/Disclaimer";
+import {
+  CurrencyToggle,
+  convertAmount,
+  currencySymbol,
+  type CurrencyState,
+} from "@/components/CurrencyToggle";
+import {
+  InflationToggle,
+  deflate,
+  type InflationState,
+} from "@/components/InflationToggle";
 import {
   ChartCard,
-  Disclaimer,
+  DisclaimerNote,
   Field,
   PageHeader,
   ProductPicker,
@@ -30,6 +42,7 @@ type YearPoint = {
   scenario_a_interest_saved: string;
   scenario_a_balance: string;
   scenario_b_investment_value: string;
+  scenario_b_gain_net: string;
   scenario_b_balance: string;
   delta_b_minus_a: string;
 };
@@ -40,6 +53,7 @@ type OptimizareResponse = {
   scenario_a_months_to_close: number;
   scenario_b_total_interest: string;
   scenario_b_final_investment_net: string;
+  scenario_b_gain_net: string;
   interest_saved_by_prepay: string;
   crossover_year: number | null;
   recommended: "A" | "B";
@@ -73,6 +87,17 @@ export default function OptimizareCredit() {
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProdusCredit[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [currency, setCurrency] = useState<CurrencyState>({
+    display: "EUR",
+    rateEurRon: 0,
+    source: null,
+  });
+  const [inflation, setInflation] = useState<InflationState>({
+    mode: "nominal",
+    rate: 0,
+    currency: "RON",
+    source: null,
+  });
 
   useEffect(() => {
     fetchProduseCredit().then(setProducts);
@@ -231,8 +256,25 @@ export default function OptimizareCredit() {
         </div>
       </form>
 
-      {result && (
+      {result && (() => {
+        const sym = currencySymbol(currency);
+        const conv = (v: number) => convertAmount(v, currency);
+        const years = form.months / 12;
+        const realFactor =
+          inflation.mode === "real" && inflation.rate > 0
+            ? (v: number) => deflate(v, inflation.rate, years)
+            : (v: number) => v;
+        const realSuffix =
+          inflation.mode === "real" && inflation.rate > 0
+            ? `real (deflatat ${inflation.rate}%/an)`
+            : undefined;
+        return (
         <section className="space-y-6 reveal reveal-fade">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CurrencyToggle value={currency} onChange={setCurrency} />
+            <InflationToggle value={inflation} onChange={setInflation} />
+          </div>
+
           <div
             className={`card p-6 md:p-7 border-l-4 ${
               result.recommended === "B"
@@ -253,8 +295,8 @@ export default function OptimizareCredit() {
             </div>
             <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">
               {result.recommended === "B"
-                ? "Randamentul net după impozit depășește dobânda economisită pe orizontul analizat."
-                : "Dobânda economisită depășește randamentul net al investiției."}{" "}
+                ? "Câștigul net al investiției (după impozit) depășește dobânda economisită pe orizontul analizat."
+                : "Dobânda economisită depășește câștigul net al investiției."}{" "}
               {result.crossover_year !== null
                 ? `Crossover B > A în anul ${result.crossover_year}.`
                 : "Fără crossover — A rămâne superior pe orizontul ales."}
@@ -264,18 +306,18 @@ export default function OptimizareCredit() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Stat
               label="Rata lunară standard"
-              value={`${fmt(result.standard_monthly_payment)} €`}
+              value={`${fmt(conv(Number(result.standard_monthly_payment)))} ${sym}`}
               hint="principal + dobândă + comision"
             />
             <Stat
               label="Efort lunar total (A & B)"
-              value={`${fmt(Number(result.standard_monthly_payment) + form.monthly_extra)} €`}
-              hint={`rata + ${fmt(form.monthly_extra)} € extra`}
+              value={`${fmt(conv(Number(result.standard_monthly_payment) + form.monthly_extra))} ${sym}`}
+              hint={`rata + ${fmt(conv(form.monthly_extra))} ${sym} extra`}
               accent
             />
             <Stat
               label="B · investiție lunară"
-              value={`${fmt(form.monthly_extra)} €`}
+              value={`${fmt(conv(form.monthly_extra))} ${sym}`}
               hint={`${form.investment_annual_return}% /an · impozit ${form.investment_tax_rate}%`}
             />
           </div>
@@ -283,31 +325,36 @@ export default function OptimizareCredit() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Stat
               label="A · dobândă economisită"
-              value={`${fmt(result.interest_saved_by_prepay)} €`}
-              hint={`închide în ${result.scenario_a_months_to_close} luni`}
+              value={`${fmt(conv(realFactor(Number(result.interest_saved_by_prepay))))} ${sym}`}
+              hint={
+                realSuffix ??
+                `închide în ${result.scenario_a_months_to_close} luni`
+              }
             />
             <Stat
-              label="B · investiție netă finală"
-              value={`${fmt(result.scenario_b_final_investment_net)} €`}
-              hint="după impozit pe câștig"
+              label="B · câștig net investiție"
+              value={`${fmt(conv(realFactor(Number(result.scenario_b_gain_net))))} ${sym}`}
+              hint={realSuffix ?? "FV − contribuții − impozit"}
             />
             <Stat
-              label="A · total dobândă credit"
-              value={`${fmt(result.scenario_a_total_interest)} €`}
+              label="B · portofoliu final"
+              value={`${fmt(conv(realFactor(Number(result.scenario_b_final_investment_net))))} ${sym}`}
+              hint={realSuffix ?? "capital + câștig net"}
             />
             <Stat
               label="B · total dobândă credit"
-              value={`${fmt(result.scenario_b_total_interest)} €`}
+              value={`${fmt(conv(Number(result.scenario_b_total_interest)))} ${sym}`}
+              hint={`A · dobândă: ${fmt(conv(Number(result.scenario_a_total_interest)))} ${sym}`}
             />
           </div>
 
-          <ChartCard title="Evoluție câștig — A (rambursare) vs B (investiție)">
+          <ChartCard title="Evoluție câștig net — A (dobândă economisită) vs B (câștig investiție)">
             <ResponsiveContainer width="100%" height={340}>
               <LineChart
                 data={result.yearly.map((y) => ({
                   year: y.year,
-                  A: Number(y.scenario_a_interest_saved),
-                  B: Number(y.scenario_b_investment_value),
+                  A: conv(Number(y.scenario_a_interest_saved)),
+                  B: conv(Number(y.scenario_b_gain_net)),
                 }))}
                 margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
               >
@@ -323,7 +370,7 @@ export default function OptimizareCredit() {
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  formatter={(v) => `${fmt(Number(v))} €`}
+                  formatter={(v) => `${fmt(Number(v))} ${sym}`}
                   labelFormatter={(y) => `Anul ${y}`}
                   contentStyle={{
                     background: "#fff",
@@ -357,7 +404,7 @@ export default function OptimizareCredit() {
                 <Line
                   type="monotone"
                   dataKey="B"
-                  name="B · investiție netă"
+                  name="B · câștig net investiție"
                   stroke="#15543d"
                   strokeWidth={2}
                   dot={false}
@@ -372,8 +419,8 @@ export default function OptimizareCredit() {
                 <Th>Anul</Th>
                 <Th>A · dobândă econ.</Th>
                 <Th>A · sold credit</Th>
-                <Th>B · investiție netă</Th>
-                <Th>B · sold credit</Th>
+                <Th>B · câștig net</Th>
+                <Th>B · portofoliu</Th>
                 <Th>Δ (B − A)</Th>
               </tr>
             </thead>
@@ -384,10 +431,10 @@ export default function OptimizareCredit() {
                   className="border-t border-[var(--border)] hover:bg-[var(--accent-soft)]/30"
                 >
                   <Td>{y.year}</Td>
-                  <Td>{fmt(y.scenario_a_interest_saved)}</Td>
-                  <Td>{fmt(y.scenario_a_balance)}</Td>
-                  <Td>{fmt(y.scenario_b_investment_value)}</Td>
-                  <Td>{fmt(y.scenario_b_balance)}</Td>
+                  <Td>{fmt(conv(Number(y.scenario_a_interest_saved)))}</Td>
+                  <Td>{fmt(conv(Number(y.scenario_a_balance)))}</Td>
+                  <Td>{fmt(conv(Number(y.scenario_b_gain_net)))}</Td>
+                  <Td>{fmt(conv(Number(y.scenario_b_investment_value)))}</Td>
                   <Td
                     className={
                       Number(y.delta_b_minus_a) > 0
@@ -395,20 +442,22 @@ export default function OptimizareCredit() {
                         : "text-amber-700 font-medium"
                     }
                   >
-                    {fmt(y.delta_b_minus_a)}
+                    {fmt(conv(Number(y.delta_b_minus_a)))}
                   </Td>
                 </tr>
               ))}
             </tbody>
           </TableCard>
 
-          <Disclaimer>
+          <Disclaimer modul="optimizare" />
+          <DisclaimerNote>
             Acest instrument nu constituie consultanță financiară sau
             investițională. Proiecțiile sunt scenarii ipotetice; performanțele
             trecute nu garantează rezultate viitoare.
-          </Disclaimer>
+          </DisclaimerNote>
         </section>
-      )}
+        );
+      })()}
     </main>
   );
 }

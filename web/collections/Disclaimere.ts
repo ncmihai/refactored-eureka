@@ -2,6 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 export const Disclaimere: CollectionConfig = {
   slug: 'disclaimere',
+  access: {
+    read: ({ req }) => {
+      if (req.user) return true
+      return { activ: { equals: true } }
+    },
+  },
   admin: {
     useAsTitle: 'nume',
     defaultColumns: ['nume', 'modul', 'limba', 'versiune', 'activ'],
