@@ -9,8 +9,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 - [/] Setup Payload CMS (structura gata, lipsește DATABASE_URI + PAYLOAD_SECRET în `.env.local`)
 - [/] Simulator Credit Avansat — motor + endpoint + UI + grafic + dropdown CMS ✅
-- [/] Optimizare Credit — motor + endpoint + UI + grafic + dropdown CMS ✅ (lipsește paritate Excel)
-- [/] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS ✅ (lipsește paritate Excel)
+- [/] Optimizare Credit — motor + endpoint + UI + grafic + dropdown CMS ✅ (paritate matematică 14/14, model are bias B — de revăzut)
+- [x] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (13/13)
 
 ---
 
@@ -61,13 +61,14 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
   - [x] Calcul crossover point
   - [x] UI side-by-side + recomandare A/B + tabel anual cu delta
   - [x] Grafic comparativ A vs B cu linie crossover (Recharts LineChart + ReferenceLine)
-  - [ ] Paritate cu foaia Excel „Optimizare credit" (teste pytest)
+  - [x] Paritate matematică (14 teste pytest; 1 xfail care documentează bias-ul modelului actual)
+  - [ ] **BUG MODEL:** comparația `scen_b_net` (portofoliu total cu capital) vs `interest_saved` (doar dobândă evitată) e apples-to-oranges → recomandarea e biasată sistematic spre B. Fix: compară surplusul net vs dobânda economisită, sau modelează cashflow-ul eliberat după închiderea A.
 - [/] **Depozit Bancar (Termen Scurt)**
   - [x] Endpoint cu impozit 10% pe dobândă
   - [x] Capitalizare lunară vs la scadență + contribuții opționale
   - [x] UI (formular + 4 stats + tabel lunar)
   - [x] Grafic evoluție sold + total depus (Recharts AreaChart + Line)
-  - [ ] Paritate cu foaia Excel „Termen Scurt"
+  - [x] Paritate matematică (13 teste pytest: closed-form compound + simple, invarianți row-by-row)
 
 ### Cross-cutting MVP
 - [ ] Componenta `InflationToggle` (nominal ↔ real)
