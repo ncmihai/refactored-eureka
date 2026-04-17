@@ -84,3 +84,13 @@ export const fetchInflatii = () => fetchCollection<Inflatie>("inflatii");
 
 export const fetchDisclaimere = () =>
   fetchCollection<Disclaimer>("disclaimere");
+
+export type Curs = {
+  id: string;
+  pereche: "EUR_RON" | "USD_RON";
+  data: string;
+  curs: number;
+  sursa: "BNR" | "manual" | "csv";
+};
+
+export const fetchCursuri = () => fetchCollection<Curs>("cursuri-valutare");

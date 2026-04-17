@@ -27,6 +27,12 @@ import {
 } from "@/components/ui";
 import { Disclaimer } from "@/components/Disclaimer";
 import { InflationToggle, deflate, type InflationState } from "@/components/InflationToggle";
+import {
+  CurrencyToggle,
+  convertAmount,
+  currencySymbol,
+  type CurrencyState,
+} from "@/components/CurrencyToggle";
 
 type DepozitRow = {
   month: number;
@@ -75,6 +81,11 @@ export default function DepozitBancar() {
     mode: "nominal",
     rate: 0,
     currency: "RON",
+    source: null,
+  });
+  const [currency, setCurrency] = useState<CurrencyState>({
+    display: "EUR",
+    rateEurRon: 0,
     source: null,
   });
 
@@ -206,10 +217,15 @@ export default function DepozitBancar() {
 
       {result && (
         <section className="space-y-6 reveal reveal-fade">
-          <InflationToggle value={inflation} onChange={setInflation} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InflationToggle value={inflation} onChange={setInflation} />
+            <CurrencyToggle value={currency} onChange={setCurrency} />
+          </div>
 
           {(() => {
             const years = form.months / 12;
+            const sym = currencySymbol(currency);
+            const conv = (v: number) => convertAmount(v, currency);
             const nominalFinal = Number(result.final_balance);
             const nominalNet = Number(result.total_net_interest);
             const realFinal =
@@ -228,23 +244,24 @@ export default function DepozitBancar() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Stat
                   label="Sold final"
-                  value={`${fmt(realFinal)} €`}
+                  value={`${fmt(conv(realFinal))} ${sym}`}
                   hint={
                     realSuffix ??
-                    `din ${fmt(result.total_contributions)} € depuși`
+                    `din ${fmt(conv(Number(result.total_contributions)))} ${sym} depuși`
                   }
                   accent
                 />
                 <Stat
                   label="Dobândă netă"
-                  value={`${fmt(realNet)} €`}
+                  value={`${fmt(conv(realNet))} ${sym}`}
                   hint={
-                    realSuffix ?? `brut ${fmt(result.total_gross_interest)} €`
+                    realSuffix ??
+                    `brut ${fmt(conv(Number(result.total_gross_interest)))} ${sym}`
                   }
                 />
                 <Stat
                   label="Impozit plătit"
-                  value={`${fmt(result.total_tax)} €`}
+                  value={`${fmt(conv(Number(result.total_tax)))} ${sym}`}
                   hint={`${form.tax_rate}% din dobândă`}
                 />
                 <Stat
@@ -265,8 +282,8 @@ export default function DepozitBancar() {
                     cumContrib += Number(r.contribution);
                     return {
                       month: r.month,
-                      sold: Number(r.closing_balance),
-                      depuneri: cumContrib,
+                      sold: convertAmount(Number(r.closing_balance), currency),
+                      depuneri: convertAmount(cumContrib, currency),
                     };
                   });
                 })()}
@@ -290,7 +307,7 @@ export default function DepozitBancar() {
                   tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
                 />
                 <Tooltip
-                  formatter={(v) => `${fmt(Number(v))} €`}
+                  formatter={(v) => `${fmt(Number(v))} ${currencySymbol(currency)}`}
                   labelFormatter={(m) => `Luna ${m}`}
                   contentStyle={{
                     background: "#fff",
@@ -340,12 +357,12 @@ export default function DepozitBancar() {
                   className="border-t border-[var(--border)] hover:bg-[var(--accent-soft)]/30"
                 >
                   <Td>{r.month}</Td>
-                  <Td>{fmt(r.opening_balance)}</Td>
-                  <Td>{fmt(r.contribution)}</Td>
-                  <Td>{fmt(r.gross_interest)}</Td>
-                  <Td>{fmt(r.tax)}</Td>
-                  <Td>{fmt(r.net_interest)}</Td>
-                  <Td>{fmt(r.closing_balance)}</Td>
+                  <Td>{fmt(convertAmount(Number(r.opening_balance), currency))}</Td>
+                  <Td>{fmt(convertAmount(Number(r.contribution), currency))}</Td>
+                  <Td>{fmt(convertAmount(Number(r.gross_interest), currency))}</Td>
+                  <Td>{fmt(convertAmount(Number(r.tax), currency))}</Td>
+                  <Td>{fmt(convertAmount(Number(r.net_interest), currency))}</Td>
+                  <Td>{fmt(convertAmount(Number(r.closing_balance), currency))}</Td>
                 </tr>
               ))}
             </tbody>

@@ -182,6 +182,11 @@ const inflatii = [
   { nume: 'USD 2025', moneda: 'USD' as const, an: 2025, rata: 2.9, default: true },
 ]
 
+const cursuri = [
+  { pereche: 'EUR_RON' as const, data: '2026-04-17', curs: 4.9765, sursa: 'manual' as const },
+  { pereche: 'USD_RON' as const, data: '2026-04-17', curs: 4.5823, sursa: 'manual' as const },
+]
+
 async function existsBySlug(payload: Awaited<ReturnType<typeof getPayload>>, collection: 'produse-credit' | 'dobanzi-depozit' | 'inflatii', nume: string) {
   const res = await payload.find({
     collection,
@@ -237,6 +242,27 @@ async function main() {
       data: { ...i, activ: true },
     })
     console.log(`  ✓  Inflație: ${i.nume}`)
+    created++
+  }
+
+  for (const c of cursuri) {
+    const existing = await payload.find({
+      collection: 'cursuri-valutare',
+      where: {
+        and: [
+          { pereche: { equals: c.pereche } },
+          { data: { equals: c.data } },
+        ],
+      },
+      limit: 1,
+    })
+    if (existing.totalDocs > 0) {
+      console.log(`  ⏭  Skip (exists): Curs ${c.pereche} ${c.data}`)
+      skipped++
+      continue
+    }
+    await payload.create({ collection: 'cursuri-valutare', data: c })
+    console.log(`  ✓  Curs: ${c.pereche} ${c.data} = ${c.curs}`)
     created++
   }
 

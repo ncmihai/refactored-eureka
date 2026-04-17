@@ -14,6 +14,17 @@ import {
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
 import { Disclaimer } from "@/components/Disclaimer";
 import {
+  CurrencyToggle,
+  convertAmount,
+  currencySymbol,
+  type CurrencyState,
+} from "@/components/CurrencyToggle";
+import {
+  InflationToggle,
+  deflate,
+  type InflationState,
+} from "@/components/InflationToggle";
+import {
   ChartCard,
   DisclaimerNote,
   Field,
@@ -72,6 +83,17 @@ export default function CreditSimulator() {
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProdusCredit[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [currency, setCurrency] = useState<CurrencyState>({
+    display: "EUR",
+    rateEurRon: 0,
+    source: null,
+  });
+  const [inflation, setInflation] = useState<InflationState>({
+    mode: "nominal",
+    rate: 0,
+    currency: "RON",
+    source: null,
+  });
 
   useEffect(() => {
     fetchProduseCredit().then(setProducts);
@@ -242,19 +264,35 @@ export default function CreditSimulator() {
           const rataPostRev = postRev
             ? Number(postRev.annuity) + Number(postRev.fee)
             : null;
+          const sym = currencySymbol(currency);
+          const conv = (v: number) => convertAmount(v, currency);
+          const years = result.months_to_close / 12;
+          const realFactor =
+            inflation.mode === "real" && inflation.rate > 0
+              ? (v: number) => deflate(v, inflation.rate, years)
+              : (v: number) => v;
+          const realSuffix =
+            inflation.mode === "real" && inflation.rate > 0
+              ? `real (deflatat ${inflation.rate}%/an)`
+              : undefined;
           return (
             <section className="space-y-6 reveal reveal-fade">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CurrencyToggle value={currency} onChange={setCurrency} />
+                <InflationToggle value={inflation} onChange={setInflation} />
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Stat
                   label="Rata lunară inițială"
-                  value={`${fmt(rataInitiala)} €`}
+                  value={`${fmt(conv(rataInitiala))} ${sym}`}
                   hint="principal + dobândă + comision"
                   accent
                 />
                 {rataPostRev !== null ? (
                   <Stat
                     label={`După revizuire (luna ${form.revision_month + 1})`}
-                    value={`${fmt(rataPostRev)} €`}
+                    value={`${fmt(conv(rataPostRev))} ${sym}`}
                     hint="recalculată la dobânda nouă"
                   />
                 ) : (
@@ -265,11 +303,13 @@ export default function CreditSimulator() {
                 )}
                 <Stat
                   label="Total de plătit"
-                  value={`${fmt(result.total_paid)} €`}
+                  value={`${fmt(conv(realFactor(Number(result.total_paid))))} ${sym}`}
+                  hint={realSuffix}
                 />
                 <Stat
                   label="Total dobândă"
-                  value={`${fmt(result.total_interest)} €`}
+                  value={`${fmt(conv(realFactor(Number(result.total_interest))))} ${sym}`}
+                  hint={realSuffix}
                 />
                 {rataPostRev !== null && (
                   <Stat
@@ -279,7 +319,7 @@ export default function CreditSimulator() {
                 )}
                 <Stat
                   label="Total comisioane"
-                  value={`${fmt(result.total_fees)} €`}
+                  value={`${fmt(conv(Number(result.total_fees)))} ${sym}`}
                 />
               </div>
 
@@ -292,8 +332,8 @@ export default function CreditSimulator() {
                         cumInt += Number(r.interest_paid);
                         return {
                           month: r.month,
-                          sold: Number(r.closing_balance),
-                          dobanda: cumInt,
+                          sold: conv(Number(r.closing_balance)),
+                          dobanda: conv(cumInt),
                         };
                       });
                     })()}
@@ -337,7 +377,7 @@ export default function CreditSimulator() {
                       tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
-                      formatter={(v) => `${fmt(Number(v))} €`}
+                      formatter={(v) => `${fmt(Number(v))} ${sym}`}
                       labelFormatter={(m) => `Luna ${m}`}
                       contentStyle={{
                         background: "#fff",
@@ -386,12 +426,12 @@ export default function CreditSimulator() {
                       className="border-t border-[var(--border)] hover:bg-[var(--accent-soft)]/30"
                     >
                       <Td>{r.month}</Td>
-                      <Td>{fmt(r.opening_balance)}</Td>
-                      <Td>{fmt(r.annuity)}</Td>
-                      <Td>{fmt(r.principal_paid)}</Td>
-                      <Td>{fmt(r.interest_paid)}</Td>
-                      <Td>{fmt(r.prepayment)}</Td>
-                      <Td>{fmt(r.closing_balance)}</Td>
+                      <Td>{fmt(conv(Number(r.opening_balance)))}</Td>
+                      <Td>{fmt(conv(Number(r.annuity)))}</Td>
+                      <Td>{fmt(conv(Number(r.principal_paid)))}</Td>
+                      <Td>{fmt(conv(Number(r.interest_paid)))}</Td>
+                      <Td>{fmt(conv(Number(r.prepayment)))}</Td>
+                      <Td>{fmt(conv(Number(r.closing_balance)))}</Td>
                     </tr>
                   ))}
                 </tbody>
