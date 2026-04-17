@@ -12,9 +12,10 @@ import {
   YAxis,
 } from "recharts";
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
+import { Disclaimer } from "@/components/Disclaimer";
 import {
   ChartCard,
-  Disclaimer,
+  DisclaimerNote,
   Field,
   PageHeader,
   ProductPicker,
@@ -396,10 +397,11 @@ export default function CreditSimulator() {
                 </tbody>
               </TableCard>
 
-              <Disclaimer>
+              <Disclaimer modul="credit" />
+              <DisclaimerNote>
                 Acest instrument nu constituie consultanță financiară.
                 Proiecțiile sunt scenarii ipotetice bazate pe datele introduse.
-              </Disclaimer>
+              </DisclaimerNote>
             </section>
           );
         })()}

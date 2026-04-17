@@ -46,8 +46,41 @@ async function fetchCollection<T>(slug: string): Promise<T[]> {
   }
 }
 
+export type Inflatie = {
+  id: string;
+  nume: string;
+  moneda: "EUR" | "RON" | "USD";
+  an: number;
+  rata: number;
+  default: boolean;
+  activ: boolean;
+};
+
+export type Disclaimer = {
+  id: string;
+  nume: string;
+  modul:
+    | "general"
+    | "credit"
+    | "optimizare"
+    | "depozit"
+    | "ul"
+    | "etf"
+    | "pensie";
+  limba: "ro" | "en";
+  versiune: string;
+  continut: unknown;
+  activ: boolean;
+  updatedAt: string;
+};
+
 export const fetchProduseCredit = () =>
   fetchCollection<ProdusCredit>("produse-credit");
 
 export const fetchDobanziDepozit = () =>
   fetchCollection<DobandaDepozit>("dobanzi-depozit");
+
+export const fetchInflatii = () => fetchCollection<Inflatie>("inflatii");
+
+export const fetchDisclaimere = () =>
+  fetchCollection<Disclaimer>("disclaimere");

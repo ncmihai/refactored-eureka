@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import {
   ChartCard,
-  Disclaimer,
+  DisclaimerNote,
   Field,
   PageHeader,
   ProductPicker,
@@ -25,6 +25,8 @@ import {
   Td,
   Th,
 } from "@/components/ui";
+import { Disclaimer } from "@/components/Disclaimer";
+import { InflationToggle, deflate, type InflationState } from "@/components/InflationToggle";
 
 type DepozitRow = {
   month: number;
@@ -69,6 +71,12 @@ export default function DepozitBancar() {
   const [error, setError] = useState<string | null>(null);
   const [deposits, setDeposits] = useState<DobandaDepozit[]>([]);
   const [selectedDepositId, setSelectedDepositId] = useState<string>("");
+  const [inflation, setInflation] = useState<InflationState>({
+    mode: "nominal",
+    rate: 0,
+    currency: "RON",
+    source: null,
+  });
 
   useEffect(() => {
     fetchDobanziDepozit().then(setDeposits);
@@ -198,29 +206,55 @@ export default function DepozitBancar() {
 
       {result && (
         <section className="space-y-6 reveal reveal-fade">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Stat
-              label="Sold final"
-              value={`${fmt(result.final_balance)} €`}
-              hint={`din ${fmt(result.total_contributions)} € depuși`}
-              accent
-            />
-            <Stat
-              label="Dobândă netă"
-              value={`${fmt(result.total_net_interest)} €`}
-              hint={`brut ${fmt(result.total_gross_interest)} €`}
-            />
-            <Stat
-              label="Impozit plătit"
-              value={`${fmt(result.total_tax)} €`}
-              hint={`${form.tax_rate}% din dobândă`}
-            />
-            <Stat
-              label="Randament efectiv net"
-              value={`${fmt(Number(result.effective_annual_yield_net) * 100, 3)}%`}
-              hint="pe an, după impozit"
-            />
-          </div>
+          <InflationToggle value={inflation} onChange={setInflation} />
+
+          {(() => {
+            const years = form.months / 12;
+            const nominalFinal = Number(result.final_balance);
+            const nominalNet = Number(result.total_net_interest);
+            const realFinal =
+              inflation.mode === "real" && inflation.rate > 0
+                ? deflate(nominalFinal, inflation.rate, years)
+                : nominalFinal;
+            const realNet =
+              inflation.mode === "real" && inflation.rate > 0
+                ? deflate(nominalNet, inflation.rate, years)
+                : nominalNet;
+            const realSuffix =
+              inflation.mode === "real"
+                ? `real (deflatat ${inflation.rate}%/an)`
+                : undefined;
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Stat
+                  label="Sold final"
+                  value={`${fmt(realFinal)} €`}
+                  hint={
+                    realSuffix ??
+                    `din ${fmt(result.total_contributions)} € depuși`
+                  }
+                  accent
+                />
+                <Stat
+                  label="Dobândă netă"
+                  value={`${fmt(realNet)} €`}
+                  hint={
+                    realSuffix ?? `brut ${fmt(result.total_gross_interest)} €`
+                  }
+                />
+                <Stat
+                  label="Impozit plătit"
+                  value={`${fmt(result.total_tax)} €`}
+                  hint={`${form.tax_rate}% din dobândă`}
+                />
+                <Stat
+                  label="Randament efectiv net"
+                  value={`${fmt(Number(result.effective_annual_yield_net) * 100, 3)}%`}
+                  hint="pe an, după impozit"
+                />
+              </div>
+            );
+          })()}
 
           <ChartCard title="Evoluție sold depozit și depuneri cumulate">
             <ResponsiveContainer width="100%" height={300}>
@@ -317,11 +351,12 @@ export default function DepozitBancar() {
             </tbody>
           </TableCard>
 
-          <Disclaimer>
+          <Disclaimer modul="depozit" />
+          <DisclaimerNote>
             Acest instrument nu constituie consultanță financiară. Dobânzile și
             impozitul pot diferi între bănci; verifică întotdeauna condițiile
             contractuale înainte de a deschide un depozit.
-          </Disclaimer>
+          </DisclaimerNote>
         </section>
       )}
     </main>
