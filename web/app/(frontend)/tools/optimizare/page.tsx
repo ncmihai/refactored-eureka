@@ -13,9 +13,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Disclaimer } from "@/components/Disclaimer";
 import {
   ChartCard,
-  Disclaimer,
+  DisclaimerNote,
   Field,
   PageHeader,
   ProductPicker,
@@ -30,6 +31,7 @@ type YearPoint = {
   scenario_a_interest_saved: string;
   scenario_a_balance: string;
   scenario_b_investment_value: string;
+  scenario_b_gain_net: string;
   scenario_b_balance: string;
   delta_b_minus_a: string;
 };
@@ -40,6 +42,7 @@ type OptimizareResponse = {
   scenario_a_months_to_close: number;
   scenario_b_total_interest: string;
   scenario_b_final_investment_net: string;
+  scenario_b_gain_net: string;
   interest_saved_by_prepay: string;
   crossover_year: number | null;
   recommended: "A" | "B";
@@ -253,8 +256,8 @@ export default function OptimizareCredit() {
             </div>
             <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">
               {result.recommended === "B"
-                ? "Randamentul net după impozit depășește dobânda economisită pe orizontul analizat."
-                : "Dobânda economisită depășește randamentul net al investiției."}{" "}
+                ? "Câștigul net al investiției (după impozit) depășește dobânda economisită pe orizontul analizat."
+                : "Dobânda economisită depășește câștigul net al investiției."}{" "}
               {result.crossover_year !== null
                 ? `Crossover B > A în anul ${result.crossover_year}.`
                 : "Fără crossover — A rămâne superior pe orizontul ales."}
@@ -287,27 +290,29 @@ export default function OptimizareCredit() {
               hint={`închide în ${result.scenario_a_months_to_close} luni`}
             />
             <Stat
-              label="B · investiție netă finală"
-              value={`${fmt(result.scenario_b_final_investment_net)} €`}
-              hint="după impozit pe câștig"
+              label="B · câștig net investiție"
+              value={`${fmt(result.scenario_b_gain_net)} €`}
+              hint="FV − contribuții − impozit"
             />
             <Stat
-              label="A · total dobândă credit"
-              value={`${fmt(result.scenario_a_total_interest)} €`}
+              label="B · portofoliu final"
+              value={`${fmt(result.scenario_b_final_investment_net)} €`}
+              hint="capital + câștig net"
             />
             <Stat
               label="B · total dobândă credit"
               value={`${fmt(result.scenario_b_total_interest)} €`}
+              hint={`A · dobândă: ${fmt(result.scenario_a_total_interest)} €`}
             />
           </div>
 
-          <ChartCard title="Evoluție câștig — A (rambursare) vs B (investiție)">
+          <ChartCard title="Evoluție câștig net — A (dobândă economisită) vs B (câștig investiție)">
             <ResponsiveContainer width="100%" height={340}>
               <LineChart
                 data={result.yearly.map((y) => ({
                   year: y.year,
                   A: Number(y.scenario_a_interest_saved),
-                  B: Number(y.scenario_b_investment_value),
+                  B: Number(y.scenario_b_gain_net),
                 }))}
                 margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
               >
@@ -357,7 +362,7 @@ export default function OptimizareCredit() {
                 <Line
                   type="monotone"
                   dataKey="B"
-                  name="B · investiție netă"
+                  name="B · câștig net investiție"
                   stroke="#15543d"
                   strokeWidth={2}
                   dot={false}
@@ -372,8 +377,8 @@ export default function OptimizareCredit() {
                 <Th>Anul</Th>
                 <Th>A · dobândă econ.</Th>
                 <Th>A · sold credit</Th>
-                <Th>B · investiție netă</Th>
-                <Th>B · sold credit</Th>
+                <Th>B · câștig net</Th>
+                <Th>B · portofoliu</Th>
                 <Th>Δ (B − A)</Th>
               </tr>
             </thead>
@@ -386,8 +391,8 @@ export default function OptimizareCredit() {
                   <Td>{y.year}</Td>
                   <Td>{fmt(y.scenario_a_interest_saved)}</Td>
                   <Td>{fmt(y.scenario_a_balance)}</Td>
+                  <Td>{fmt(y.scenario_b_gain_net)}</Td>
                   <Td>{fmt(y.scenario_b_investment_value)}</Td>
-                  <Td>{fmt(y.scenario_b_balance)}</Td>
                   <Td
                     className={
                       Number(y.delta_b_minus_a) > 0
@@ -402,11 +407,12 @@ export default function OptimizareCredit() {
             </tbody>
           </TableCard>
 
-          <Disclaimer>
+          <Disclaimer modul="optimizare" />
+          <DisclaimerNote>
             Acest instrument nu constituie consultanță financiară sau
             investițională. Proiecțiile sunt scenarii ipotetice; performanțele
             trecute nu garantează rezultate viitoare.
-          </Disclaimer>
+          </DisclaimerNote>
         </section>
       )}
     </main>

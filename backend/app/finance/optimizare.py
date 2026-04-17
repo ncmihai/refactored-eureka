@@ -42,6 +42,7 @@ class YearPoint:
     scenario_a_interest_saved: Decimal
     scenario_a_balance: Decimal
     scenario_b_investment_value: Decimal
+    scenario_b_gain_net: Decimal
     scenario_b_balance: Decimal
     delta_b_minus_a: Decimal
 
@@ -53,6 +54,7 @@ class OptimizareResult:
     scenario_a_months_to_close: int
     scenario_b_total_interest: Decimal
     scenario_b_final_investment_net: Decimal
+    scenario_b_gain_net: Decimal
     interest_saved_by_prepay: Decimal
     crossover_year: int | None
     recommended: str
@@ -114,6 +116,7 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
     gain = final_gross - contributions
     tax = gain * inp.investment_tax_rate if gain > 0 else Decimal("0")
     scen_b_net = final_gross - tax
+    scen_b_gain_net = gain - tax
 
     yearly: list[YearPoint] = []
     crossover_year: int | None = None
@@ -144,14 +147,16 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
         b_gain = b_invest - b_contrib
         b_tax = b_gain * inp.investment_tax_rate if b_gain > 0 else Decimal("0")
         b_net = b_invest - b_tax
+        b_gain_net = b_gain - b_tax
 
-        delta = b_net - a_interest_saved_so_far
+        delta = b_gain_net - a_interest_saved_so_far
         yearly.append(
             YearPoint(
                 year=y,
                 scenario_a_interest_saved=a_interest_saved_so_far,
                 scenario_a_balance=a_balance,
                 scenario_b_investment_value=b_net,
+                scenario_b_gain_net=b_gain_net,
                 scenario_b_balance=base_balance,
                 delta_b_minus_a=delta,
             )
@@ -159,7 +164,7 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
         if crossover_year is None and delta > 0:
             crossover_year = y
 
-    recommended = "B" if scen_b_net > interest_saved else "A"
+    recommended = "B" if scen_b_gain_net > interest_saved else "A"
 
     standard_monthly = (
         base.schedule[0].annuity + base.schedule[0].fee
@@ -173,6 +178,7 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
         scenario_a_months_to_close=scen_a.months_to_close,
         scenario_b_total_interest=base.total_interest,
         scenario_b_final_investment_net=scen_b_net,
+        scenario_b_gain_net=scen_b_gain_net,
         interest_saved_by_prepay=interest_saved,
         crossover_year=crossover_year,
         recommended=recommended,

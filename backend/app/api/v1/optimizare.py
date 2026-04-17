@@ -26,6 +26,7 @@ class YearPointResponse(BaseModel):
     scenario_a_interest_saved: Decimal
     scenario_a_balance: Decimal
     scenario_b_investment_value: Decimal
+    scenario_b_gain_net: Decimal
     scenario_b_balance: Decimal
     delta_b_minus_a: Decimal
 
@@ -36,6 +37,7 @@ class OptimizareResponse(BaseModel):
     scenario_a_months_to_close: int
     scenario_b_total_interest: Decimal
     scenario_b_final_investment_net: Decimal
+    scenario_b_gain_net: Decimal
     interest_saved_by_prepay: Decimal
     crossover_year: int | None
     recommended: str
@@ -51,6 +53,7 @@ def simulate(req: OptimizareRequest) -> OptimizareResponse:
         scenario_a_months_to_close=result.scenario_a_months_to_close,
         scenario_b_total_interest=result.scenario_b_total_interest,
         scenario_b_final_investment_net=result.scenario_b_final_investment_net,
+        scenario_b_gain_net=result.scenario_b_gain_net,
         interest_saved_by_prepay=result.interest_saved_by_prepay,
         crossover_year=result.crossover_year,
         recommended=result.recommended,

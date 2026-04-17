@@ -141,13 +141,21 @@ def test_scenarioB_zero_return_has_zero_gain() -> None:
 # ---------- Invarianți de recomandare ----------
 
 
-def test_recommendation_equals_B_when_investment_beats_saving(base_input: OptimizareInput) -> None:
-    """Dacă scen_b_net > interest_saved → recomandare B."""
+def test_recommendation_equals_B_when_gain_beats_saving(base_input: OptimizareInput) -> None:
+    """Comparație apples-to-apples: câștig net (FV − contribuții − tax) vs dobândă economisită."""
     result = simulate_optimizare(base_input)
-    if result.scenario_b_final_investment_net > result.interest_saved_by_prepay:
+    if result.scenario_b_gain_net > result.interest_saved_by_prepay:
         assert result.recommended == "B"
     else:
         assert result.recommended == "A"
+
+
+def test_gain_net_equals_final_investment_minus_contributions(base_input: OptimizareInput) -> None:
+    """scen_b_gain_net = scen_b_final_investment_net − contribuții_totale."""
+    result = simulate_optimizare(base_input)
+    contributions = base_input.monthly_extra * Decimal(base_input.months)
+    expected = result.scenario_b_final_investment_net - contributions
+    assert _close(result.scenario_b_gain_net, expected)
 
 
 def test_high_investment_return_favors_B() -> None:
@@ -166,18 +174,8 @@ def test_high_investment_return_favors_B() -> None:
     assert result.recommended == "B"
 
 
-@pytest.mark.xfail(
-    reason=(
-        "Model actual compară scen_b_net (portofoliu total inclusiv capital depus) "
-        "cu interest_saved (doar dobândă evitată) — apples-to-oranges. "
-        "Rezultatul e biasat sistematic spre B. "
-        "FIX: recomandare pe delta surplus = (scen_b_gain) vs interest_saved, "
-        "sau adaugă modelarea cashflow-ului eliberat după închiderea anticipată în A."
-    ),
-    strict=True,
-)
 def test_high_credit_rate_low_invest_favors_A() -> None:
-    """Credit scump (15%) + investiție slabă (2%) → dobândă economisită ar trebui să bată cash-ul B."""
+    """Credit scump (15%) + investiție slabă (2%) → dobândă economisită bate câștigul net al investiției."""
     inp = OptimizareInput(
         principal=Decimal("60000"),
         months=120,
@@ -211,11 +209,11 @@ def test_yearly_length_equals_ceil_months_over_12(base_input: OptimizareInput) -
     assert len(result.yearly) == expected_years
 
 
-def test_delta_sign_matches_scen_b_minus_a(base_input: OptimizareInput) -> None:
-    """Pentru fiecare an: delta_b_minus_a = b_net - a_interest_saved_so_far."""
+def test_delta_sign_matches_gain_minus_saving(base_input: OptimizareInput) -> None:
+    """Pentru fiecare an: delta_b_minus_a = scen_b_gain_net − scen_a_interest_saved (apples-to-apples)."""
     result = simulate_optimizare(base_input)
     for yp in result.yearly:
-        computed = yp.scenario_b_investment_value - yp.scenario_a_interest_saved
+        computed = yp.scenario_b_gain_net - yp.scenario_a_interest_saved
         assert _close(yp.delta_b_minus_a, computed)
 
 
