@@ -31,8 +31,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Neon DB — proiect prod (schema auto-push Payload; branching dev deferred)
 - [x] Deploy skeleton: Vercel (frontend+CMS) + Render Free (backend) + Python 3.13 pinned
 - [x] Secrets management (`PAYLOAD_SECRET` generat, env vars pe Vercel+Render)
-- [ ] Rotate Neon password (credentials au fost expuse în chat)
-- [ ] Upstash Redis instance — pentru cache BNR + job queue
+- [x] Rotate Neon password — ALTER ROLE + env vars rotite pe Vercel (3/3 envs) + local
+- [x] Upstash Redis instance — `eu-central-1`, TLS, wire cache layer în FastAPI, `/health/redis` reachable în prod
 - [ ] Setup Sentry (FE + BE) + PostHog
 - [ ] GitHub CI (lint, pytest, type-check) — repo-ul `refactored-eureka`
 - [ ] Neon branching dev — ramură separată pt dev local, păstrând prod intact
