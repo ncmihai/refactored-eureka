@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef } from "react";
 
-import { fetchCursuri, type Curs } from "@/lib/cms";
+import { fetchBnrPair } from "@/lib/bnr";
+import { fetchCursuri } from "@/lib/cms";
 
 export type Currency = "EUR" | "RON";
 
@@ -18,31 +19,78 @@ type Props = {
 };
 
 export function CurrencyToggle({ value, onChange }: Props) {
-  const [cursuri, setCursuri] = useState<Curs[]>([]);
+  // Load the EUR/RON rate once on mount.
+  // Preference order: BNR live (our FastAPI + Upstash cache) → CMS
+  // (Cursuri_Valutare, for consultant-authored overrides) → hardcoded 5.0
+  // fallback. `sourceLoadedRef` ensures we don't clobber a user-chosen
+  // display currency or racing overrides on subsequent renders.
+  const sourceLoadedRef = useRef(false);
 
   useEffect(() => {
-    fetchCursuri().then(setCursuri);
+    if (sourceLoadedRef.current) return;
+    if (value.source) {
+      sourceLoadedRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      // 1. BNR live via backend
+      const bnr = await fetchBnrPair("EUR-RON");
+      if (cancelled) return;
+      if (bnr) {
+        const qualifier = bnr.stale
+          ? " · stale"
+          : bnr.cached
+            ? " · cached"
+            : " · live";
+        onChange({
+          display: value.display,
+          rateEurRon: bnr.rate,
+          source: `BNR ${bnr.date}${qualifier}`,
+        });
+        sourceLoadedRef.current = true;
+        return;
+      }
+
+      // 2. CMS override (Cursuri_Valutare)
+      const cursuri = await fetchCursuri();
+      if (cancelled) return;
+      const eurRon = cursuri
+        .filter((c) => c.pereche === "EUR_RON")
+        .sort(
+          (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
+        )[0];
+      if (eurRon) {
+        onChange({
+          display: value.display,
+          rateEurRon: eurRon.curs,
+          source: `CMS ${eurRon.data.slice(0, 10)}`,
+        });
+        sourceLoadedRef.current = true;
+        return;
+      }
+
+      // 3. Hardcoded fallback — disclosed so user knows it's not live
+      onChange({
+        display: value.display,
+        rateEurRon: 5,
+        source: "default 5.0000",
+      });
+      sourceLoadedRef.current = true;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // We deliberately run this effect only once per mount — onChange is
+    // stable enough for our purposes and adding it would re-trigger the
+    // fetch on every parent re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const eurRonLatest = useMemo(() => {
-    const eurRon = cursuri.filter((c) => c.pereche === "EUR_RON");
-    if (!eurRon.length) return null;
-    return eurRon.sort(
-      (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
-    )[0];
-  }, [cursuri]);
-
-  useEffect(() => {
-    if (!eurRonLatest) return;
-    if (value.source) return;
-    onChange({
-      display: value.display,
-      rateEurRon: eurRonLatest.curs,
-      source: `BNR ${eurRonLatest.data.slice(0, 10)}`,
-    });
-  }, [eurRonLatest, value, onChange]);
-
-  const rate = value.rateEurRon || eurRonLatest?.curs || 5;
+  const rate = value.rateEurRon || 5;
 
   return (
     <div className="card p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
