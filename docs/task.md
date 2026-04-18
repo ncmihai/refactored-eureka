@@ -33,6 +33,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Secrets management (`PAYLOAD_SECRET` generat, env vars pe Vercel+Render)
 - [x] Rotate Neon password — ALTER ROLE + env vars rotite pe Vercel (3/3 envs) + local
 - [x] Upstash Redis instance — `eu-central-1`, TLS, wire cache layer în FastAPI, `/health/redis` reachable în prod
+- [x] Endpoint BNR `/api/v1/bnr/rates` — 1h TTL fresh + 30d stale-while-revalidate, multiplier-aware parsing, 6.2× speedup (222ms → 36ms local, <5ms Render↔Upstash)
 - [ ] Setup Sentry (FE + BE) + PostHog
 - [ ] GitHub CI (lint, pytest, type-check) — repo-ul `refactored-eureka`
 - [ ] Neon branching dev — ramură separată pt dev local, păstrând prod intact
