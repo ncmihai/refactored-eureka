@@ -7,10 +7,18 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 ## În progres
 
-- [/] Setup Payload CMS (structura gata, lipsește DATABASE_URI + PAYLOAD_SECRET în `.env.local`)
-- [/] Simulator Credit Avansat — motor + endpoint + UI + grafic + dropdown CMS ✅
+- [x] Setup Payload CMS — producție live (Neon + Vercel)
+- [x] Simulator Credit Avansat — motor + endpoint + UI + grafic + dropdown CMS
 - [x] Optimizare Credit — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (16/16, bias B rezolvat prin comparație gain_net vs interest_saved)
 - [x] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (13/13)
+- [x] Investiții ETF — motor SIP + TER + capital gains + paritate matematică (19/19) + UI complet
+- [x] Deploy producție — Vercel (instrumentar.vercel.app) + Render (FastAPI) + Neon Postgres, CORS OK
+
+## Production URLs
+
+- Frontend + Payload admin: https://instrumentar.vercel.app
+- FastAPI backend: https://refactored-eureka-h7bs.onrender.com
+- DB: Neon pooled, regiune `eu-central-1`
 
 ---
 
@@ -20,12 +28,14 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Init monorepo: Next.js 16 App Router + Payload CMS v3 integrat (cost 0)
 - [x] Setup proiect Python FastAPI în `/backend` + venv + dependențe
 - [x] `.env.example` pentru web + backend
-- [ ] Neon DB — proiect + schema inițială + branching dev/prod
-- [ ] Upstash Redis instance
-- [ ] Deploy skeleton: Vercel (frontend+CMS) + Render Free (backend)
+- [x] Neon DB — proiect prod (schema auto-push Payload; branching dev deferred)
+- [x] Deploy skeleton: Vercel (frontend+CMS) + Render Free (backend) + Python 3.13 pinned
+- [x] Secrets management (`PAYLOAD_SECRET` generat, env vars pe Vercel+Render)
+- [ ] Rotate Neon password (credentials au fost expuse în chat)
+- [ ] Upstash Redis instance — pentru cache BNR + job queue
 - [ ] Setup Sentry (FE + BE) + PostHog
-- [ ] GitHub repo privat + CI (lint, pytest, type-check)
-- [ ] Secrets management (generare `PAYLOAD_SECRET`, `.env.local` per mediu)
+- [ ] GitHub CI (lint, pytest, type-check) — repo-ul `refactored-eureka`
+- [ ] Neon branching dev — ramură separată pt dev local, păstrând prod intact
 
 ### Auth & RBAC
 - [ ] Auth bazat pe Payload CMS (JWT httpOnly cookie)
