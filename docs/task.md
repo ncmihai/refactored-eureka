@@ -83,7 +83,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 ### Cross-cutting MVP
 - [x] Componenta `InflationToggle` (nominal ↔ real) — integrată în Depozit, folosește colecția `Inflatii`
-- [ ] Componenta `CurrencyToggle` + tabel devalorizare istorică EUR/RON & USD/RON
+- [/] Componenta `CurrencyToggle` — wire live la BNR via `/api/v1/bnr/rates` (Upstash cached), fallback CMS → default 5.0. Tabel devalorizare istorică EUR/RON & USD/RON încă pending.
 - [ ] Componenta `IndexationInput` (rata indexare anuală)
 - [x] Disclaimere persistente în UI (per modul) — component `<Disclaimer modul="..." />` fetch din CMS cu render richText
 - [ ] Disclaimere în PDF
