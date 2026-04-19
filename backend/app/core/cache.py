@@ -8,7 +8,7 @@ the API still serves even if redis is down.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import redis
 
@@ -23,11 +23,15 @@ def get_client() -> redis.Redis | None:
     if not settings.redis_url:
         return None
     if _client is None:
-        _client = redis.from_url(
-            settings.redis_url,
-            decode_responses=True,
-            socket_timeout=2.0,
-            socket_connect_timeout=2.0,
+        # redis.from_url lacks full type stubs — cast to our annotated type.
+        _client = cast(
+            "redis.Redis",
+            redis.from_url(  # type: ignore[no-untyped-call]
+                settings.redis_url,
+                decode_responses=True,
+                socket_timeout=2.0,
+                socket_connect_timeout=2.0,
+            ),
         )
     return _client
 
@@ -38,7 +42,9 @@ def get_json(key: str) -> Any | None:
     if client is None:
         return None
     try:
-        raw = client.get(key)
+        # Sync Redis client returns str (decode_responses=True) or None, but the
+        # stubbed return type is a union including Awaitable. Narrow explicitly.
+        raw = cast("str | None", client.get(key))
     except redis.RedisError:
         return None
     if raw is None:

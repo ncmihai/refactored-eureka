@@ -13,7 +13,7 @@ downtime degrades gracefully (always returns fresh live data).
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -146,7 +146,7 @@ def get_rates(force_refresh: bool = False) -> dict[str, Any]:
             }
         raise exc
 
-    fetched_at = datetime.now(timezone.utc).isoformat()
+    fetched_at = datetime.now(UTC).isoformat()
     payload = _serialize_for_cache(parsed)
     payload["fetched_at"] = fetched_at
     cache.set_json(CACHE_KEY, payload, ttl_seconds=CACHE_TTL_SECONDS)

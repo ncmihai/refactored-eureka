@@ -1,0 +1,84 @@
+name: CI
+
+# Runs on every push to main and every PR targeting main. Two independent
+# jobs in parallel: backend (Python) and frontend (TypeScript type-check).
+# Kept deliberately tight — no deploy, no e2e, no DB spin-up. Goal is
+# fast feedback on regressions before code lands on main.
+#
+# What's NOT here (yet, intentional):
+# - Production build of `web/`: Vercel already runs this on every push, so
+#   duplicating it would waste minutes. If Vercel build fails, their
+#   integration posts back to the commit status.
+# - e2e / Playwright: planned for Faza 1 QA phase (see docs/task.md).
+# - Backend deploy: Render auto-deploys on push, same logic as Vercel.
+# - Neon branch per PR: potential future add once we have real PR flow.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel older in-flight runs for the same ref — no point burning minutes
+# on a stale commit when a newer one has been pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (ruff + mypy + pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          # Match local dev + Render pinning (backend/.python-version = 3.13.1)
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type check (mypy)
+        run: mypy app
+
+      - name: Run tests (pytest)
+        # Tests don't need DB / Redis / Sentry — cache layer is mocked,
+        # redis_url defaults to "" so the client returns None fast.
+        run: pytest -q
+
+  frontend:
+    name: Frontend (tsc type-check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # Match local dev + Vercel default Node 20.x LTS
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        # tsc covers the App Router + Payload config in strict mode.
+        # `next build` is skipped here — Vercel's CI runs it on every push
+        # and we rely on their check status for build correctness.
+        run: npx tsc --noEmit
