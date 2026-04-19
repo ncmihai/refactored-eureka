@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { captureSimulation } from "@/lib/posthog";
 import {
   Area,
   AreaChart,
@@ -121,6 +122,7 @@ export default function InvestitiiETF() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       setResult(await res.json());
+      captureSimulation("investitii");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
     } finally {

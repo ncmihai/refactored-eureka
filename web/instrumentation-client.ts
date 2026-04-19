@@ -1,15 +1,18 @@
-// Sentry client-side init.
+// Client-side instrumentation entry point.
 //
 // `instrumentation-client.ts` runs after HTML load but before React hydration
 // (see node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/instrumentation-client.md).
-// That timing is ideal for setting up error tracking — we catch React render
-// errors, unhandled promise rejections, and navigation-time failures.
+// That timing is ideal for setting up error tracking and analytics — we catch
+// React render errors, unhandled promise rejections, and capture the very
+// first page view before any user interaction.
 //
-// DSN is read from NEXT_PUBLIC_SENTRY_DSN; if unset we no-op so dev/CI
-// without a DSN don't trip the SDK. Release tag is left undefined — Vercel
-// injects VERCEL_GIT_COMMIT_SHA which the Sentry plugin (withSentryConfig)
-// picks up automatically on build.
+// Two tools run here:
+//   - Sentry   — error tracking & tracing (DSN from NEXT_PUBLIC_SENTRY_DSN)
+//   - PostHog  — GDPR-safe product analytics (KEY from NEXT_PUBLIC_POSTHOG_KEY)
+// Both silently no-op when their env keys are missing so dev/CI don't need
+// real secrets to boot.
 import * as Sentry from "@sentry/nextjs";
+import { capturePageView, initPostHog } from "./lib/posthog";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -31,7 +34,25 @@ if (dsn) {
   });
 }
 
-// Hook the App Router navigation events into Sentry so transactions span
-// client-side route changes. Required by Sentry 8+ when using App Router.
-// Per Next.js 16 docs, the export name must be `onRouterTransitionStart`.
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+// Boot PostHog. This is a no-op when NEXT_PUBLIC_POSTHOG_KEY is unset (local
+// dev, preview builds without secrets) so we don't need to guard the call.
+// See lib/posthog.ts for the privacy-safe config.
+initPostHog();
+
+// Fire the initial page view. `onRouterTransitionStart` only covers
+// *subsequent* navigations — the first hit (direct visit, refresh, social
+// link) doesn't go through the transition hook.
+if (typeof window !== "undefined") {
+  capturePageView(window.location.pathname + window.location.search);
+}
+
+// Router navigation hook. Per Next.js 16 docs the export name must be
+// `onRouterTransitionStart`. We forward to both Sentry (for transaction
+// spans) and PostHog (for $pageview counting).
+export function onRouterTransitionStart(
+  url: string,
+  navigationType: "push" | "replace" | "traverse",
+): void {
+  Sentry.captureRouterTransitionStart(url, navigationType);
+  capturePageView(url);
+}

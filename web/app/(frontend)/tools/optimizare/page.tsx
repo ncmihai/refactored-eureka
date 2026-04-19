@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
+import { captureSimulation } from "@/lib/posthog";
 import {
   CartesianGrid,
   Legend,
@@ -157,6 +158,7 @@ export default function OptimizareCredit() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       setResult(await res.json());
+      captureSimulation("optimizare");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
     } finally {
@@ -285,7 +287,7 @@ export default function OptimizareCredit() {
             <div className="text-xs uppercase tracking-[0.14em] text-[var(--muted-2)]">
               Recomandare
             </div>
-            <div className="font-serif text-2xl md:text-3xl tracking-tight mt-2 leading-tight">
+            <div className="font-serif h-card tracking-tight mt-2">
               Scenariu{" "}
               <span className="italic">{result.recommended}</span>
               {" — "}

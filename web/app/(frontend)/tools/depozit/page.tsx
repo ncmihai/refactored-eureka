@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchDobanziDepozit, type DobandaDepozit } from "@/lib/cms";
+import { captureSimulation } from "@/lib/posthog";
 import {
   Area,
   AreaChart,
@@ -133,6 +134,7 @@ export default function DepozitBancar() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       setResult(await res.json());
+      captureSimulation("depozit");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
     } finally {

@@ -26,6 +26,12 @@ export default buildConfig({
     meta: {
       titleSuffix: ' — Finance Platform',
     },
+    // Force dark theme across the admin. The alternative `'all'` would let
+    // users toggle light/dark in their profile, but for a single-brand
+    // consultant tool the toggle adds UI noise and inconsistent screenshots.
+    // If we ever need light back, change to `'all'` and remove nothing else —
+    // the custom.scss overrides are scoped per data-theme attribute.
+    theme: 'dark',
   },
   collections: [
     Users,

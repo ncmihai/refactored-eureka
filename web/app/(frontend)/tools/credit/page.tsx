@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
+import { captureSimulation } from "@/lib/posthog";
 import { Disclaimer } from "@/components/Disclaimer";
 import {
   CurrencyToggle,
@@ -152,6 +153,7 @@ export default function CreditSimulator() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       setResult(await res.json());
+      captureSimulation("credit");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
     } finally {
