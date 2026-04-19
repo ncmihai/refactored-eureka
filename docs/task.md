@@ -36,8 +36,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Endpoint BNR `/api/v1/bnr/rates` — 1h TTL fresh + 30d stale-while-revalidate, multiplier-aware parsing, 6.2× speedup (222ms → 36ms local, <5ms Render↔Upstash)
 - [x] Setup Sentry (FE + BE) — BE FastAPI (`telemetry.py`, FastApi/Starlette/Httpx integrations, 10% sampling, PII off), FE Next.js 16 App Router (`@sentry/nextjs` 10.49, instrumentation.ts + instrumentation-client.ts, sentry.{server,edge}.config.ts, global-error.tsx, `withSentryConfig` cu tunnelRoute `/monitoring` + source-maps upload), DSN-uri setate pe Vercel (3 scope-uri) + Render, ingestion verificată cap-coadă (backend `/debug/sentry-crash` + FE throw)
 - [ ] PostHog (product analytics) — amânat, după Auth & RBAC
-- [ ] GitHub CI (lint, pytest, type-check) — repo-ul `refactored-eureka`
-- [ ] Neon branching dev — ramură separată pt dev local, păstrând prod intact
+- [x] GitHub CI (lint, pytest, type-check) — `.github/workflows/ci.yml`, 2 job-uri paralele (ruff+mypy+pytest backend, tsc frontend), concurrency cancel-in-progress, rulează pe push+PR, verde în ~46s
+- [x] Neon branching dev — branch `dev` (id `br-old-recipe-al9j8dru`) creat din `production`, `.env.local` local pointează pe dev, Vercel rămâne pe prod; `.env.example` actualizat cu instrucțiuni
 
 ### Auth & RBAC
 - [ ] Auth bazat pe Payload CMS (JWT httpOnly cookie)

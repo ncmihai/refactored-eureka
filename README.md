@@ -40,6 +40,17 @@ npm run dev
 Admin Payload: http://localhost:3000/admin
 Site public: http://localhost:3000
 
+### Baza de date — Neon branching
+
+Proiectul Neon `instrumentar` are două ramuri:
+
+| Ramură | Folosită de | Connection string stocat în |
+|---|---|---|
+| `production` | Vercel prod + preview + dev deploys | Vercel env vars (`DATABASE_URI`) |
+| `dev` | Dev local (npm run dev) | `web/.env.local` |
+
+Branch-ul `dev` e fork copy-on-write din `production`, deci poți rula seed-uri, migrații sau experimenta liber fără să strici datele reale. Când vrei să re-sincronizezi dev cu prod: `mcp__Neon__reset_from_parent` sau din consolă.
+
 ## Documentație
 
 - [Planning](docs/planning.md) — viziune, arhitectură, roadmap
