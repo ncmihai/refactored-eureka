@@ -25,12 +25,55 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * Fluid root font-size (viewport-responsive).
+ * Body grows modestly on wider monitors so content feels calibrated,
+ * not zoomed-out, when a consultant opens the app on a 24"/27" display.
+ * - Viewport 1024px  → ~15.4px
+ * - Viewport 1280px  → ~15.8px
+ * - Viewport 1440px  → ~16.0px (matches previous baseline)
+ * - Viewport 1920px  → ~16.7px
+ * - Viewport 2560px  → ~17.6px
+ * - Viewport 3840+px → clamped at 18px
+ * Every rem-based size (Tailwind's text-*, spacing, max-w) scales with this.
+ */
+html {
+  font-size: clamp(15px, 14px + 0.14vw, 18px);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Fluid display type — used for hero + section headings.
+ * Tuned to hit ~60px H1 at 1440 (matches old md:text-6xl),
+ * grow gently on larger screens, and plateau before 4K so the hero
+ * doesn't dominate a 27"+ monitor.
+ *
+ * Measured at common breakpoints:
+ *   viewport   h-hero    h-section   h-card
+ *   1280px     ~59px     ~38px       ~25px
+ *   1440px     ~64px     ~40px       ~26px
+ *   1920px     ~78px     ~47px       ~30px
+ *   2560px     ~83px*    ~53px*      ~35px*   (* plateau / clamp-max)
+ *   3840px     ~85px     ~54px       ~36px
+ */
+.h-hero {
+  font-size: clamp(2.25rem, 1.8rem + 2.4vw, 4.7rem);
+  line-height: 1.05;
+}
+.h-section {
+  font-size: clamp(1.75rem, 1.3rem + 1.4vw, 3rem);
+  line-height: 1.1;
+}
+.h-card {
+  font-size: clamp(1.375rem, 1.2rem + 0.55vw, 2rem);
+  line-height: 1.2;
 }
 
 @keyframes reveal-up {
