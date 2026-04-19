@@ -12,6 +12,7 @@
     "@payloadcms/db-postgres": "^3.83.0",
     "@payloadcms/next": "^3.83.0",
     "@payloadcms/richtext-lexical": "^3.83.0",
+    "@sentry/nextjs": "^10.49.0",
     "graphql": "^16.13.2",
     "next": "16.2.4",
     "payload": "^3.83.0",

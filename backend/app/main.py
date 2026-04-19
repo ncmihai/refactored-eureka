@@ -4,6 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import bnr, credit, depozit, investitii, optimizare
 from app.core.cache import ping as redis_ping
 from app.core.config import settings
+from app.core.telemetry import init_sentry
+
+# Initialize Sentry as early as possible so import-time errors are captured.
+_sentry_enabled = init_sentry()
 
 app = FastAPI(title="Finance Platform API", version="0.1.0")
 
@@ -35,3 +39,16 @@ def health_redis() -> dict[str, str | bool]:
         "configured": configured,
         "reachable": redis_ping() if configured else False,
     }
+
+
+@app.get("/health/sentry")
+def health_sentry() -> dict[str, bool]:
+    """Report whether Sentry SDK was initialized."""
+    return {"configured": bool(settings.sentry_dsn), "enabled": _sentry_enabled}
+
+
+@app.get("/debug/sentry-crash")
+def sentry_crash() -> None:
+    """Force an uncaught exception — used once per deploy to verify Sentry wiring.
+    Remove or guard behind an admin flag after setup is confirmed working."""
+    raise RuntimeError("Sentry wiring test — if you see this in Sentry, it works.")
