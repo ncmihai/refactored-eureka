@@ -98,4 +98,124 @@
   :focus-visible {
     outline-offset: 1px;
   }
+
+  /* ==================================================================
+   * Login / Forgot-password page — minimal template.
+   *
+   * Payload's default is a form slapped in the middle of a dark screen.
+   * We lift it into a "card over ambient gradient" feel: a very dark warm
+   * background with a low-opacity green glow top-left (matches the site's
+   * accent), then a bordered panel around the form itself so it reads as
+   * a deliberate container, not centred void.
+   *
+   * Scope is `.template-minimal` which wraps login + forgot + reset pages
+   * (not the dashboard) — so these rules don't leak into the rest of the
+   * admin we already styled above.
+   * ================================================================== */
+
+  html[data-theme='dark'] .template-minimal {
+    position: relative;
+    min-height: 100vh;
+    background: radial-gradient(
+        ellipse 60% 50% at 18% 15%,
+        rgba(42, 138, 103, 0.14),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 40% at 85% 85%,
+        rgba(42, 138, 103, 0.08),
+        transparent 65%
+      ),
+      var(--theme-elevation-0);
+    overflow: hidden;
+
+    /* Hairline grid pattern — ~5% opacity so it's only perceptible at
+     * close reading distance. Gives the otherwise flat background a
+     * texture that reads as "careful product" rather than "placeholder". */
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0.02) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.02) 1px,
+          transparent 1px
+        );
+      background-size: 48px 48px;
+      mask-image: radial-gradient(
+        ellipse 70% 60% at 50% 50%,
+        black,
+        transparent 90%
+      );
+    }
+  }
+
+  /* The inner wrap is what Payload centres — we turn it into the card. */
+  html[data-theme='dark'] .template-minimal__wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 440px;
+    width: calc(100% - 40px);
+    padding: 48px 40px 40px;
+    background: rgba(22, 23, 21, 0.72);
+    border: 1px solid var(--theme-elevation-50);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.1),
+      0 20px 48px -20px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Brand area — centre the logo, bump its size, and add a tagline feel
+   * by tightening spacing to the form below. */
+  html[data-theme='dark'] .login__brand {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+
+    img,
+    svg {
+      max-height: 40px;
+      width: auto;
+    }
+  }
+
+  /* Form inputs: a hair more padding so they feel less cramped in the card. */
+  html[data-theme='dark'] .template-minimal .field-type input {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  /* Forgot-password link: push it right-aligned and mute it so the login
+   * CTA stays the visual anchor. */
+  html[data-theme='dark'] .login__form > a {
+    display: block;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--theme-elevation-500);
+    margin: 8px 0 20px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--theme-success-600);
+    }
+  }
+
+  /* Full-width primary button — tighter radius matches the card. */
+  html[data-theme='dark'] .template-minimal .form-submit .btn {
+    width: 100%;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    border-radius: 8px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
 }
