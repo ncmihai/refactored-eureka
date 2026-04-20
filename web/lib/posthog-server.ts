@@ -78,20 +78,29 @@ export type AdminStats = {
  * that filters inline without WHERE — lets us compute today/week/by-tool in
  * one pass over the event stream.
  *
+ * IMPORTANT: HogQL requires an explicit `FROM events` clause even on
+ * aggregate-only SELECTs. Leaving it out returns HTTP 400 with
+ * `"HogQL error: Expected table"`. We also scope every branch to the 7-day
+ * window via an outer WHERE so the Clickhouse query planner can prune the
+ * event partition before running the countIf loop — otherwise it walks the
+ * whole project history, which is what tripped us up in production.
+ *
  * Event name `tool_simulation_ran` matches what `captureSimulation()` emits
  * from `lib/posthog.ts`. Keep them in sync.
  */
 const KPI_QUERY = `
   SELECT
     countIf(event = 'tool_simulation_ran' AND toStartOfDay(timestamp) = toStartOfDay(now())) AS sims_today,
-    countIf(event = 'tool_simulation_ran' AND timestamp > now() - INTERVAL 7 DAY) AS sims_week,
-    countIf(event = 'tool_simulation_ran' AND properties.tool = 'credit' AND timestamp > now() - INTERVAL 7 DAY) AS sims_credit,
-    countIf(event = 'tool_simulation_ran' AND properties.tool = 'optimizare' AND timestamp > now() - INTERVAL 7 DAY) AS sims_optimizare,
-    countIf(event = 'tool_simulation_ran' AND properties.tool = 'depozit' AND timestamp > now() - INTERVAL 7 DAY) AS sims_depozit,
-    countIf(event = 'tool_simulation_ran' AND properties.tool = 'investitii' AND timestamp > now() - INTERVAL 7 DAY) AS sims_investitii,
+    countIf(event = 'tool_simulation_ran') AS sims_week,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'credit') AS sims_credit,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'optimizare') AS sims_optimizare,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'depozit') AS sims_depozit,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'investitii') AS sims_investitii,
     uniqIf(distinct_id, timestamp > now() - INTERVAL 1 DAY) AS unique_today,
-    uniqIf(distinct_id, timestamp > now() - INTERVAL 7 DAY) AS unique_week,
-    countIf(event = '$pageview' AND timestamp > now() - INTERVAL 7 DAY) AS pageviews_week
+    uniq(distinct_id) AS unique_week,
+    countIf(event = '$pageview') AS pageviews_week
+  FROM events
+  WHERE timestamp > now() - INTERVAL 7 DAY
 `.trim();
 
 /**
@@ -144,7 +153,29 @@ async function queryHogQL<T = unknown>(query: string): Promise<T[]> {
   );
 
   if (!res.ok) {
-    throw new Error(`posthog_${res.status}`);
+    // Try to extract PostHog's structured error detail. On validation
+    // failures the body looks like:
+    //   { "type": "validation_error", "code": "invalid_query",
+    //     "detail": "HogQL error: Table 'events' ..." }
+    // The detail is gold for debugging query syntax; we log it server-side
+    // (admin-only page, low volume, fine to log) and surface a short hint
+    // in the error message so the widget notice isn't just a bare status.
+    let hint = "";
+    try {
+      const body = await res.json();
+      if (body?.detail) {
+        hint = `: ${String(body.detail).slice(0, 160)}`;
+        // Server log keeps the full error for future forensics — we truncate
+        // only what goes to the UI, not what we record.
+        console.warn(
+          `[posthog-server] query failed ${res.status}:`,
+          body.detail,
+        );
+      }
+    } catch {
+      // Body wasn't JSON — skip, status alone is enough.
+    }
+    throw new Error(`posthog_${res.status}${hint}`);
   }
 
   const data = (await res.json()) as {
@@ -266,12 +297,17 @@ async function fetchAdminStatsUncached(): Promise<AdminStats> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // `message` already contains either a short code like `posthog_403` or a
+    // richer `posthog_400: HogQL error: …` from the fetch helper above. We
+    // pass it through verbatim (minus the prefix duplication) so the admin
+    // notice surfaces the actual PostHog complaint.
     return {
       ...empty,
       status: "error",
-      reason: message === "missing_credentials"
-        ? "Lipsesc credențialele PostHog."
-        : `PostHog indisponibil (${message}).`,
+      reason:
+        message === "missing_credentials"
+          ? "Lipsesc credențialele PostHog."
+          : `PostHog indisponibil (${message}).`,
     };
   }
 }
