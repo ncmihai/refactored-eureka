@@ -13,12 +13,17 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Depozit Bancar — motor + endpoint + UI + grafic + dropdown CMS + paritate matematică (13/13)
 - [x] Investiții ETF — motor SIP + TER + capital gains + paritate matematică (19/19) + UI complet
 - [x] Deploy producție — Vercel (instrumentar.vercel.app) + Render (FastAPI) + Neon Postgres, CORS OK
+- [x] Observabilitate live — Sentry FE+BE (ingestion verificată) + PostHog EU GDPR-safe (4 unelte trimit `captureSimulation`)
+- [x] CI verde pe fiecare push — GitHub Actions (ruff + mypy + pytest BE, tsc FE) în ~46s
+- [x] Admin dark theme — brand green, login glass card, fix CSS Turbopack prod (`@payloadcms/next/css`)
 
 ## Production URLs
 
 - Frontend + Payload admin: https://instrumentar.vercel.app
 - FastAPI backend: https://refactored-eureka-h7bs.onrender.com
 - DB: Neon pooled, regiune `eu-central-1`
+- Analytics: PostHog EU cloud (`eu.i.posthog.com`)
+- Errors: Sentry (DSN pe Vercel × 3 scope-uri + Render)
 
 ---
 
@@ -35,7 +40,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Upstash Redis instance — `eu-central-1`, TLS, wire cache layer în FastAPI, `/health/redis` reachable în prod
 - [x] Endpoint BNR `/api/v1/bnr/rates` — 1h TTL fresh + 30d stale-while-revalidate, multiplier-aware parsing, 6.2× speedup (222ms → 36ms local, <5ms Render↔Upstash)
 - [x] Setup Sentry (FE + BE) — BE FastAPI (`telemetry.py`, FastApi/Starlette/Httpx integrations, 10% sampling, PII off), FE Next.js 16 App Router (`@sentry/nextjs` 10.49, instrumentation.ts + instrumentation-client.ts, sentry.{server,edge}.config.ts, global-error.tsx, `withSentryConfig` cu tunnelRoute `/monitoring` + source-maps upload), DSN-uri setate pe Vercel (3 scope-uri) + Render, ingestion verificată cap-coadă (backend `/debug/sentry-crash` + FE throw)
-- [ ] PostHog (product analytics) — amânat, după Auth & RBAC
+- [x] PostHog (product analytics) — EU cloud, `person_profiles: 'identified_only'`, autocapture off, replay off, respect_dnt, `captureSimulation()` pe cele 4 tool-uri, pageview manual pe router transition. `lib/posthog.ts` centralizat (niciun alt fișier nu importă `posthog-js`).
 - [x] GitHub CI (lint, pytest, type-check) — `.github/workflows/ci.yml`, 2 job-uri paralele (ruff+mypy+pytest backend, tsc frontend), concurrency cancel-in-progress, rulează pe push+PR, verde în ~46s
 - [x] Neon branching dev — branch `dev` (id `br-old-recipe-al9j8dru`) creat din `production`, `.env.local` local pointează pe dev, Vercel rămâne pe prod; `.env.example` actualizat cu instrucțiuni
 
@@ -75,26 +80,48 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
   - [x] Grafic comparativ A vs B cu linie crossover (Recharts LineChart + ReferenceLine)
   - [x] Paritate matematică (16 teste pytest, toate verzi)
   - [x] Fix bias model: recomandarea se bazează acum pe `scen_b_gain_net` (FV − contribuții − tax) vs `interest_saved` — comparație apples-to-apples
-- [/] **Depozit Bancar (Termen Scurt)**
+- [x] **Depozit Bancar (Termen Scurt)**
   - [x] Endpoint cu impozit 10% pe dobândă
   - [x] Capitalizare lunară vs la scadență + contribuții opționale
   - [x] UI (formular + 4 stats + tabel lunar)
   - [x] Grafic evoluție sold + total depus (Recharts AreaChart + Line)
   - [x] Paritate matematică (13 teste pytest: closed-form compound + simple, invarianți row-by-row)
+  - [x] InflationToggle nominal ↔ real integrat
+- [x] **Investiții ETF (DCA / SIP)**
+  - [x] Motor backend: DCA lunar, compound end-of-month, TER, broker fee (% + fix), tax pe gain la final
+  - [x] Endpoint `POST /api/v1/investitii/simulate`
+  - [x] UI cu CurrencyToggle + InflationToggle + CMS Disclaimer (modul=etf)
+  - [x] Paritate matematică (19 teste pytest: lump-sum closed-form, SIP anuity-due, fee math, CAGR, tax invariants)
 
 ### Cross-cutting MVP
-- [x] Componenta `InflationToggle` (nominal ↔ real) — integrată în Depozit, folosește colecția `Inflatii`
-- [/] Componenta `CurrencyToggle` — wire live la BNR via `/api/v1/bnr/rates` (Upstash cached), fallback CMS → default 5.0. Tabel devalorizare istorică EUR/RON & USD/RON încă pending.
+- [x] Componenta `InflationToggle` (nominal ↔ real) — integrată în Depozit + Investiții, folosește colecția `Inflatii`, exportă `deflate()` helper
+- [x] Componenta `CurrencyToggle` — wire live la BNR via `/api/v1/bnr/rates` (Upstash cached), cascadă BNR → CMS `CursuriValutare` → fallback static 4.9765, arată sursa în UI
+- [ ] Tabel devalorizare istorică EUR/RON & USD/RON (extensie pentru CurrencyToggle)
 - [ ] Componenta `IndexationInput` (rata indexare anuală)
 - [x] Disclaimere persistente în UI (per modul) — component `<Disclaimer modul="..." />` fetch din CMS cu render richText
 - [ ] Disclaimere în PDF
 - [ ] Export PDF cu logo firmă (white-label)
 - [ ] i18n RO/EN (next-intl sau echivalent; conținut dual-field în CMS)
+- [x] Typography fluidă (`clamp()` scale h1-h3/body/small) + hero stats strip + „Cum funcționează" steps pe homepage
+- [x] Navbar dropdown Tools (scalabil — click-outside + Escape + route-change auto-close)
 
 ### QA MVP
-- [ ] `pytest` — suite paritate cu Excel (min 20 test-case-uri per modul)
+- [/] `pytest` — suite paritate cu Excel. Curent: **60 teste verzi** (6 credit + 16 optimizare + 13 depozit + 19 investiții ETF + 5 cross-cutting + 1 bias-fix). Target inițial ≥20/modul încă nu atins pe credit.
 - [ ] Property-based tests (Hypothesis) pentru invarianți credit
 - [ ] Playwright E2E — flow „consultant deschide sesiune → credit → PDF”
+
+---
+
+### Admin UI / UX
+- [x] Dark theme forțat (`admin.theme = 'dark'`) — single brand look pentru MVP
+- [x] Brand green 19-stop scale pe `--theme-success-*` → primary buttons / focus / active nav
+- [x] Warm near-black base (pure `#000` flattenează elevation layers Payload)
+- [x] Fraunces serif fallback pe logo + doc/step headers (in-family cu site public)
+- [x] Login page glass card peste ambient radial gradient + hairline grid pattern
+- [x] Fix CSS Turbopack prod — `import '@payloadcms/next/css'` în `(payload)/layout.tsx`
+- [x] Custom Dashboard widget (`admin.components.beforeDashboard`) — `lib/posthog-server.ts` + RSC `components/admin/DashboardStats/` cu 4 KPI tiles + per-tool bar + sparkline SVG inline (fără Recharts, RSC pur). HogQL Query API, cache 60s via `unstable_cache`. Status modes: `ok` / `not_configured` / `error`. `POSTHOG_PROJECT_ID` + `POSTHOG_PERSONAL_API_KEY` configurate în Vercel prod.
+- [ ] PostHog `/flags/` 401 — fie enable feature flags în proiect, fie `advanced_disable_feature_flags: true`
+- [ ] Payload CLI `generate:importmap` crapă pe Next.js 16 (bug `@next/env` default export) — hand-patched temporar. Fix: fie bump Payload când iese v3.84+, fie PR upstream în `dist/bin/loadEnv.js`.
 
 ---
 
@@ -105,8 +132,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [ ] Colecție CMS `Indici_Istorici` (S&P 500, MSCI World, STOXX 600, BET — CSV randamente lunare)
 - [ ] Simulator UL Stand-alone (parametrizat CMS; Allianz Dinamic Invest ca prim produs)
 - [ ] Integrare `yfinance` + caching Redis pe ticker/TER
-- [ ] Simulator ETF Stand-alone (TER + comision broker)
-- [ ] Monte Carlo historical bootstrap (block 12 luni, 10k iter)
+- [ ] Extindere ETF cu Monte Carlo historical bootstrap (block 12 luni, 10k iter) — motorul determinist e live (Faza 1); rămâne partea de distribuție
+- [ ] Monte Carlo historical bootstrap — universe S&P/MSCI/STOXX/BET, block 12 luni, 10k iter vectorizat
 - [ ] Fan chart P10/P25/P50/P75/P90 în UI
 - [ ] Scenarii „cel mai rău caz istoric” (start 1929/1999/2000/2008)
 - [ ] Comparator Suprem 3-way (UL / ETF / Depozit)

@@ -25,8 +25,13 @@ Toate valorile viitoare generate de simulatoarele de acumulare au metodă de aju
 Fiecare simulare este asociată unei monede primare (a produsului/contractului).
 
 - **Inflația** se aplică în moneda simulării.
-- **Conversia FX** pentru comparații: folosește cursul curent din CMS (`Cursuri_Valutare`).
-- **Tabel auxiliar „Devalorizare istorică”:** afișează grafic EUR/RON, USD/RON pe ultimii 10-20 ani pentru a arăta impactul compus al deprecierii (dobânzi nominale mai mari în RON sunt tăiate de inflație și FX).
+- **Conversia FX** pentru comparații: cascadă de surse cu fallback grațios:
+  1. **BNR live** via `GET /api/v1/bnr/rates?currencies=EUR,USD` — parse XML oficial BNR, cache Upstash cu strategie *stale-while-revalidate* (fresh TTL 1h, stale tolerance 30 zile). Speedup măsurat 6.2× (222ms fresh fetch → 36ms local hit).
+  2. **CMS** (`Cursuri_Valutare`) — ultimul entry după `validFrom`, folosit când BNR e down > 30 zile sau când se impune un curs manual pentru scenarii istorice.
+  3. **Default static** (4.9765 EUR/RON la seed time) — fallback de siguranță.
+  - UI (`CurrencyToggle`) afișează sursa cursului („BNR 20 Apr" / „CMS 18 Apr" / „default") pentru transparență față de consultant.
+  - Parser suportă `multiplier` din XML-ul BNR (ex: JPY 100) — valoarea e normalizată per unitate înainte de expunere.
+- **Tabel auxiliar „Devalorizare istorică”:** afișează grafic EUR/RON, USD/RON pe ultimii 10-20 ani pentru a arăta impactul compus al deprecierii (dobânzi nominale mai mari în RON sunt tăiate de inflație și FX). (Încă pending — feature backlog.)
 
 ---
 
@@ -90,9 +95,41 @@ Preluat din foaia Excel „Termen Scurt”.
 
 ## 7. Simulator ETF (Stand-alone)
 
-- **Deduceri:** TER (Total Expense Ratio, ex: 0.07%/an) + Comision Brokeraj (ex: 0.1% per tranzacție).
-- **Formula lunară:**
-  $Valoare\_Cont_n = \left( Valoare\_Cont_{n-1} \times \left(1 + \dfrac{Randament\_Anual - TER}{12}\right) \right) + (Suma\_Depusa \times (1 - Comision\_Broker))$
+### 7.1 Motor determinist (Faza 1 — live)
+
+**Intrări:** `Suma_Initiala`, `Suma_Lunara` (DCA/SIP), `Durata_Luni`, `Randament_Anual` (așteptat, nominal), `TER` (ex: 0.07%), `Comision_Broker_Procent` (ex: 0.1%), `Comision_Broker_Fix` (ex: 0 EUR), `Impozit_Castig` (10% RO), `Moneda`.
+
+**Randament efectiv lunar:** $r_{ef} = \dfrac{Randament\_Anual - TER}{12}$
+
+**Aplicarea comisionului broker per tranzacție:**
+- Fiecare depunere pierde `Comision_Procent × Suma + Comision_Fix` **înainte** să fie cumpărate unități.
+- Suma efectiv investită: $Depus\_Efectiv = Suma\_Depusa \times (1 - Comision\_Procent) - Comision\_Fix$
+
+**Compounding end-of-month:**
+$Valoare\_Cont_n = \left( Valoare\_Cont_{n-1} + Depus\_Efectiv_n \right) \times (1 + r_{ef})$
+
+(Depunerea lunii $n$ participă la randamentul lunii $n$ — annuity-due, nu ordinary annuity. Paritate verificată cu formula closed-form SIP.)
+
+**Impozit pe câștig — model buy-and-hold:**
+- Aplicat **doar la sfârșit**, pe câștigul brut agregat.
+- $Castig\_Brut = Valoare\_Final - Total\_Contribuit\_Efectiv$
+- $Impozit = \max(0, Castig\_Brut) \times Impozit\_Castig$ (nu impozităm pierderi)
+- $Valoare\_Neta = Valoare\_Final - Impozit$
+
+**Output:**
+- `final_value_gross`, `final_value_net`, `total_contributed` (brut, înainte de broker), `total_contributed_effective` (după broker), `total_broker_fees`, `total_tax`, `gain_net`, `cagr_net`.
+- `schedule[]` — sold lunar (gross) + contribuție brut/efectiv per lună.
+
+**Paritate pytest (19 teste verzi):**
+- Lump-sum closed-form (fără DCA, doar suma inițială × compound).
+- SIP annuity-due closed-form (fără sumă inițială, doar DCA).
+- Broker fee math — invariant `total_broker_fees = Σ (suma × procent + fix)`.
+- CAGR definition — `(FV/PV)^(1/ani) − 1`.
+- Tax invariants — impozit 0 pe loss, impozit liniar pe gain.
+
+### 7.2 Extensie Monte Carlo (Faza 2 — planificat)
+
+Înlocuiește `Randament_Anual` determinist cu array simulat per iterație (vezi §8). Fan chart P10/P50/P90 + scenarii worst historical start. Motorul determinist se reutilizează 1:1 — Monte Carlo doar wraps bucla într-o matrice NumPy `(10000 × N_luni)`.
 
 ---
 
@@ -268,3 +305,23 @@ Valori default care se aplică tuturor modulelor, editabile prin CMS:
 | Impozit dobândă depozit | 10% | Cod Fiscal RO |
 | Impozit câștig capital | 10% | Cod Fiscal RO |
 | Deductibilitate Pilon III | 400 EUR/an | Cod Fiscal RO |
+
+---
+
+## 17. Note operaționale (gotchas persistate)
+
+### 17.1 Payload CMS admin — CSS loading în Next.js 16 Turbopack prod
+
+`@payloadcms/next@3.83` ship-uiește pre-compiled — sursele `.scss` sunt șterse din pachet, iar `import './index.scss'` din JS sunt stripped. În **dev** (Turbopack dev / webpack) source-maps-ul rezolvă SCSS-ul la runtime → admin stilizat. În **Next.js 16 Turbopack prod**, build-ul sare peste SCSS → admin renderuiește cu browser defaults (body unstyled, linkuri albastre, sidebar gol).
+
+**Fix:** adăugat `import '@payloadcms/next/css'` în `app/(payload)/layout.tsx`, **înainte** de `./custom.scss`. Pachetul expune stylesheet-ul prebuilt la `dist/prod/styles.css` (~306KB) care conține toate selector-urile `.template-default`, `.template-minimal`, `.nav`, `.login__form`, `.doc-header` etc.
+
+**Cascada `@layer`:** Payload injectează `<style>@layer payload-default, payload;</style>` în `<head>` la startup pentru a pin-a precedența. Overrides-urile locale trebuie să folosească `@layer payload { ... }` (nu `payload-default`), altfel sunt suprascrise de propriul stylesheet Payload.
+
+### 17.2 Tema admin — single lever pe `--theme-success-*`
+
+Payload folosește scale-ul `success` pentru primary buttons, focus rings, active nav indicator, link hover, toast success. Re-mapparea celor 19 stop-uri `--theme-success-50` → `-950` pe brand green (`#15543d` derivat) re-skin-uiește tot admin-ul cu o singură secțiune SCSS. Fără această remappare, temele custom cer 20+ selector overrides.
+
+### 17.3 Scope `.template-minimal` vs dashboard
+
+Wrapper-ul `.template-minimal` acoperă login + forgot-password + reset — nu dashboard-ul. Stilurile de login card se pot scrie cu scope `.template-minimal` fără risc de leakage în CMS-ul principal (care folosește `.template-default`).

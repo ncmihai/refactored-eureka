@@ -36,12 +36,13 @@ Structură **„Headless” modulară**, monorepo Next.js + Payload CMS v3 integ
 
 | Strat | Tehnologie | Hosting |
 |---|---|---|
-| Frontend + CMS | Next.js 14+ (App Router, SSR/ISR) + Payload CMS v3 | Vercel (Hobby) |
+| Frontend + CMS | Next.js 16 (App Router + Turbopack) + Payload CMS v3 | Vercel (Hobby) |
 | Backend Core | Python FastAPI (async, OpenAPI auto) | Render (Free → Starter la demo) |
-| Bază de date | Neon (Serverless PostgreSQL) | Neon Free |
-| Cache | Redis | Upstash Free |
-| Surse date piață | `yfinance` (MVP) → feed plătit (Fază 2+) | — |
-| Observabilitate | Sentry + PostHog | Free tier |
+| Bază de date | Neon (Serverless PostgreSQL, `eu-central-1`, branch prod + dev) | Neon Free |
+| Cache | Redis (BNR rates, rezultate simulări deterministice) | Upstash Free (`eu-central-1`) |
+| Surse date piață | BNR XML (FX, cache stale-while-revalidate 1h fresh / 30d stale) · `yfinance` (Faza 2) → feed plătit (Faza 3) | — |
+| Observabilitate | Sentry (FE+BE) + PostHog EU GDPR-safe | Free tier |
+| CI/CD | GitHub Actions (ruff + mypy + pytest BE, tsc FE) | GitHub Free |
 
 **Cost total MVP: 0 €.** GitHub Pro via Student Pack pentru repo + CI.
 
@@ -189,9 +190,16 @@ Pilonul modularității — zero cod când se adaugă un produs nou.
 ## 12. Observabilitate
 
 - **Sentry** (free) — erori backend + frontend.
-- **PostHog** (free) — analytics, event tracking, feature flags.
+  - Backend: `sentry-sdk[fastapi]` cu integrations FastApi/Starlette/Httpx, `traces_sample_rate=0.1`, `send_default_pii=False`.
+  - Frontend (Next.js 16): `@sentry/nextjs` cu three-file pattern (`instrumentation.ts`, `instrumentation-client.ts`, `sentry.server/edge.config.ts`) + `withSentryConfig` wrap cu `tunnelRoute: '/monitoring'` (bypass ad-blockers) + source-maps upload la build.
+  - `app/global-error.tsx` pentru capturare erori render Next.js 16.
+- **PostHog** (free) — product analytics, event tracking, feature flags (dezactivate pe MVP).
+  - **EU cloud** (`eu.i.posthog.com`) — zero date rutate prin US.
+  - GDPR-safe defaults: `person_profiles: 'identified_only'`, `autocapture: false`, `disable_session_recording: true`, `respect_dnt: true`, `capture_pageview: false` (manual pe `onRouterTransitionStart`).
+  - Wrapper centralizat `lib/posthog.ts` — niciun alt fișier nu importă `posthog-js` direct. Exports: `captureSimulation(tool)`, `capturePdfExport(tool)` — zero input values părăsesc clientul.
 - **Logging structurat JSON** → stdout → Render logs.
-- **Health checks** pe toate endpoint-urile critice.
+- **Health checks** pe toate endpoint-urile critice (`/health/redis`, `/api/v1/bnr/rates` cu cache diagnostic).
+- **CI/CD:** GitHub Actions rulează ruff + mypy + pytest (backend) și tsc (frontend) în paralel pe fiecare push/PR, ~46s verde. Cancel-in-progress pe PR nou.
 
 ---
 

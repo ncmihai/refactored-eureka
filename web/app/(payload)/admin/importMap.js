@@ -22,6 +22,12 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+// NOTE: next two entries hand-edited because `npx payload generate:importmap`
+// currently crashes on Next.js 16 (Payload v3.83's loadEnv.js destructures
+// `loadEnvConfig` as a named export from @next/env, but Next 16 moved all
+// exports under `.default`). Regenerate via the CLI once Payload patches.
+// See: node_modules/payload/dist/bin/loadEnv.js
+import DashboardStats_instrumentar from '../../../components/admin/DashboardStats/index.tsx'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -48,5 +54,6 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "/components/admin/DashboardStats#default": DashboardStats_instrumentar
 }
