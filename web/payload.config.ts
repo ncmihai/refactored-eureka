@@ -14,6 +14,7 @@ import { Inflatii } from './collections/Inflatii'
 import { IndiciIstorici } from './collections/IndiciIstorici'
 import { Media } from './collections/Media'
 import { ProduseCredit } from './collections/ProduseCredit'
+import { ProduseUL } from './collections/ProduseUL'
 import { Users } from './collections/Users'
 
 const filename = fileURLToPath(import.meta.url)
@@ -59,6 +60,7 @@ export default buildConfig({
     Firme,
     Media,
     ProduseCredit,
+    ProduseUL,
     DobanziDepozit,
     FonduriETF,
     IndiciIstorici,

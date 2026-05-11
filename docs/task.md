@@ -106,7 +106,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Navbar dropdown Tools (scalabil — click-outside + Escape + route-change auto-close)
 
 ### QA MVP
-- [/] `pytest` — suite paritate cu Excel. Curent: **70 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 investiții ETF). Target inițial ≥20/modul încă nu atins pe credit/depozit/investiții.
+- [/] `pytest` — suite paritate cu Excel. Curent: **86 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 ETF deterministic + 9 Monte Carlo + 5 UL + 2 comparator). Target inițial ≥20/modul încă nu atins pe credit/depozit.
 - [ ] Property-based tests (Hypothesis) pentru invarianți credit
 - [ ] Playwright E2E — flow „consultant deschide sesiune → credit → PDF”
 
@@ -139,31 +139,31 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [ ] Politică surse date: ce poate fi public, ce trebuie citat, ce date nu includem până avem licență clară
 
 ### Faza 2B — ETF Monte Carlo
-- [ ] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
-- [ ] Endpoint `POST /api/v1/investitii/monte-carlo` — reutilizează input-ul ETF deterministic + `index_symbol`, `iterations`, `block_size`
-- [ ] Output percentiles lunar: P10/P25/P50/P75/P90 + final distribution + probability of loss + probability target reached
+- [x] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
+- [x] Endpoint `POST /api/v1/investitii/monte-carlo` — reutilizează cash-flow-ul ETF deterministic + `monthly_returns`, `iterations`, `block_size`
+- [x] Output percentiles lunar: P10/P25/P50/P75/P90 + final distribution + probability of loss + probability target reached
 - [ ] Scenarii worst-start deterministic: 1929, 1999, 2000, 2008 unde seria permite; fallback explicat dacă indicele nu are istoric suficient
-- [ ] Metrici investiții: CAGR median/net, volatilitate anualizată, Sharpe simplificat, max drawdown pe scenarii, Regula 72
-- [ ] Teste unitare: shape output, seed determinism, no-negative contribution bugs, percentile monotonicity, tax/fee invariants
-- [ ] Benchmark local: 10k × 30 ani sub 500ms pentru motor pur sau documentăm prag realist înainte de optimizare
-- [ ] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, tabel final distribution, copy explicativ fără promisiuni de randament
+- [/] Metrici investiții: CAGR median/net, volatilitate anualizată, Sharpe simplificat, max drawdown median; Regula 72 rămâne pentru comparator/UI
+- [x] Teste unitare: shape output, seed determinism, percentile monotonicity, target probability, fee/contribution invariants
+- [x] Benchmark local: 10k × 30 ani în ~223ms pentru motor pur
+- [/] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, final distribution și copy explicativ; folosește încă serie demonstrativă până conectăm `Indici_Istorici`
 
 ### Faza 2C — Unit-Linked stand-alone
-- [ ] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
-- [ ] Seed primul produs UL demonstrativ (Allianz Dinamic Invest) doar cu parametri licențiați/publici; dacă licența e neclară, etichetă „exemplu generic”
-- [ ] Motor UL deterministic în backend — cash-flow lunar, unități inițiale/acumulare, taxe pe sold, taxe fixe, randament net
-- [ ] Endpoint `POST /api/v1/unit-linked/simulate`
-- [ ] UI `tools/unit-linked` — formular, produs CMS dropdown, grafic sold vs contribuții, defalcare taxe, disclaimer MiFID/insurance
-- [ ] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length
-- [ ] Capture analytics `captureSimulation("unit_linked")` + disclaimer CMS `modul="ul"`
+- [x] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
+- [x] Seed primul produs UL demonstrativ (Allianz Dinamic Invest style) ca „exemplu generic” până la clarificarea licenței
+- [x] Motor UL deterministic în backend — cash-flow lunar, unități inițiale/acumulare, taxe pe sold, taxe fixe, randament net
+- [x] Endpoint `POST /api/v1/unit-linked/simulate`
+- [x] UI `tools/unit-linked` — formular, produs CMS dropdown, grafic sold vs contribuții, defalcare taxe, disclaimer MiFID/insurance
+- [x] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length
+- [/] Capture analytics — folosește temporar bucket `investitii`; adăugăm slug separat `unit_linked` în PostHog wrapper când extindem dashboard-ul
 
 ### Faza 2D — Comparator investițional 3-way
-- [ ] Definește contract comun de output pentru Depozit / ETF / UL: contribuții, valoare netă, taxe, taxe procentuale, CAGR, risk metrics, schedule
-- [ ] Endpoint `POST /api/v1/comparator/simulate` — rulează Depozit + ETF + UL cu același cash-flow și returnează comparație normalizată
-- [ ] UI `tools/comparator` — 3 coloane, grafic net value, tabel taxe, risc, lichiditate, recomandare neutră pe criterii, fără „cel mai bun produs” absolut
-- [ ] Metrici comparative: TCO, CAGR net, Sharpe, drawdown, probabilitate target, Regula 72
-- [ ] Disclaimer explicit: comparație educațională, nu recomandare personalizată; produsul potrivit depinde de profil MiFID și obiective
-- [ ] Teste backend comparator: aceeași contribuție brută pentru toate modulele, taxe agregate corect, output stabil la inputs extreme
+- [x] Definește contract comun de output pentru Depozit / ETF / UL: contribuții, valoare netă, taxe, CAGR, schedule
+- [x] Endpoint `POST /api/v1/comparator/simulate` — rulează Depozit + ETF + UL cu același cash-flow și returnează comparație normalizată
+- [x] UI `tools/comparator` — 3 coloane, grafic net value, taxe, câștig, CAGR și lider numeric neutru
+- [/] Metrici comparative: TCO simplificat + CAGR net live; Sharpe/drawdown/probabilitate target vin după conectarea Monte Carlo în comparator
+- [x] Disclaimer explicit: comparație educațională, nu recomandare personalizată; produsul potrivit depinde de profil MiFID și obiective
+- [x] Teste backend comparator: aceeași contribuție brută pentru toate modulele, output pozitiv și lider valid
 
 ### Faza 2E — Sesiuni, PDF & pitch readiness
 - [ ] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt

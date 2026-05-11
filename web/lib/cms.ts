@@ -68,6 +68,22 @@ export type RandamentIndice = {
   activ: boolean;
 };
 
+export type ProdusUL = {
+  id: string;
+  nume: string;
+  provider: string;
+  moneda: "EUR" | "RON" | "USD";
+  fixedInsuranceFee: number;
+  allocationFeeLow: number;
+  allocationFeeHigh: number;
+  allocationThreshold: number;
+  initialUnitsMonths: number;
+  expenseRecoveryAnnual: number;
+  adminFeeAnnual: number;
+  sourceUrl?: string | null;
+  activ: boolean;
+};
+
 type PayloadListResponse<T> = {
   docs: T[];
   totalDocs: number;
@@ -123,6 +139,8 @@ export const fetchDobanziDepozit = () =>
   fetchCollection<DobandaDepozit>("dobanzi-depozit");
 
 export const fetchFonduriETF = () => fetchCollection<FondETF>("fonduri-etf");
+
+export const fetchProduseUL = () => fetchCollection<ProdusUL>("produse-ul");
 
 export const fetchIndiciIstorici = () =>
   fetchCollection<RandamentIndice>("indici-istorici");

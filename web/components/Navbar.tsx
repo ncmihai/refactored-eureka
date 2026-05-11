@@ -23,7 +23,17 @@ const tools = [
   {
     href: "/tools/investitii",
     label: "Investiții ETF",
-    desc: "SIP, TER, CAGR net după impozit",
+    desc: "SIP, TER, Monte Carlo și CAGR net",
+  },
+  {
+    href: "/tools/unit-linked",
+    label: "Unit-Linked",
+    desc: "Taxe alocare, unități inițiale și acumulare",
+  },
+  {
+    href: "/tools/comparator",
+    label: "Comparator 3-way",
+    desc: "Depozit vs ETF vs Unit-Linked",
   },
 ];
 

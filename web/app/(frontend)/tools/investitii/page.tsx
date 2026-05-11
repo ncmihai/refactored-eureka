@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchFonduriETF, type FondETF } from "@/lib/cms";
 import { captureSimulation } from "@/lib/posthog";
 import {
   Area,
@@ -18,6 +19,8 @@ import {
   DisclaimerNote,
   Field,
   PageHeader,
+  ProductPicker,
+  Select,
   Stat,
   TableCard,
   Td,
@@ -60,6 +63,39 @@ type InvestitieResponse = {
   effective_annual_return: string;
 };
 
+type MonteCarloPercentile = {
+  month: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+};
+
+type MonteCarloResponse = {
+  percentiles: MonteCarloPercentile[];
+  final_distribution: {
+    p10: number;
+    p25: number;
+    p50: number;
+    p75: number;
+    p90: number;
+  };
+  probability_of_loss: number;
+  probability_target_reached: number | null;
+  cagr_median_net: number;
+  annualized_volatility_median: number;
+  sharpe_median: number | null;
+  max_drawdown_median: number;
+  iterations: number;
+  block_size: number;
+  months: number;
+  seed: number | null;
+  total_contributions_gross: number;
+  total_contributions_net: number;
+  total_broker_fees: number;
+};
+
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 
@@ -68,6 +104,12 @@ const fmt = (v: string | number, digits = 2) =>
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
+
+const DEMO_MONTHLY_RETURNS = [
+  0.018, -0.021, 0.026, 0.011, -0.014, 0.019, 0.007, -0.006, 0.024, 0.013,
+  -0.017, 0.029, 0.004, 0.016, -0.012, 0.021, 0.009, -0.019, 0.027, 0.014,
+  -0.008, 0.018, 0.006, 0.023,
+];
 
 export default function InvestitiiETF() {
   const [form, setForm] = useState({
@@ -80,9 +122,21 @@ export default function InvestitiiETF() {
     broker_fee_fixed: 0,
     holding_tax: 10,
   });
+  const [mode, setMode] = useState<"deterministic" | "monte_carlo">(
+    "deterministic",
+  );
+  const [mcForm, setMcForm] = useState({
+    iterations: 10000,
+    block_size: 12,
+    target_value: 50000,
+    seed: 42,
+  });
   const [result, setResult] = useState<InvestitieResponse | null>(null);
+  const [mcResult, setMcResult] = useState<MonteCarloResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [funds, setFunds] = useState<FondETF[]>([]);
+  const [selectedFundId, setSelectedFundId] = useState("");
   const [inflation, setInflation] = useState<InflationState>({
     mode: "nominal",
     rate: 0,
@@ -95,33 +149,84 @@ export default function InvestitiiETF() {
     source: null,
   });
 
+  useEffect(() => {
+    fetchFonduriETF().then(setFunds);
+  }, []);
+
+  const applyFund = (id: string) => {
+    setSelectedFundId(id);
+    if (!id) return;
+    const fund = funds.find((x) => x.id === id);
+    if (!fund) return;
+    setForm((f) => ({
+      ...f,
+      ter: fund.ter,
+    }));
+    if (fund.moneda === "RON") {
+      setCurrency((current) => ({ ...current, display: "RON" }));
+    } else if (fund.moneda === "EUR") {
+      setCurrency((current) => ({ ...current, display: "EUR" }));
+    }
+  };
+
   const update = <K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
+
+  const updateMc = <K extends keyof typeof mcForm>(
+    key: K,
+    value: (typeof mcForm)[K],
+  ) => setMcForm((f) => ({ ...f, [key]: value }));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setMcResult(null);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/v1/investitii/simulate`, {
+      const endpoint =
+        mode === "deterministic"
+          ? `${BACKEND_URL}/api/v1/investitii/simulate`
+          : `${BACKEND_URL}/api/v1/investitii/monte-carlo`;
+      const payload =
+        mode === "deterministic"
+          ? {
+              principal: form.principal,
+              months: form.months,
+              monthly_contribution: form.monthly_contribution,
+              annual_return: form.annual_return / 100,
+              ter: form.ter / 100,
+              broker_fee_pct: form.broker_fee_pct / 100,
+              broker_fee_fixed: form.broker_fee_fixed,
+              holding_tax: form.holding_tax / 100,
+            }
+          : {
+              principal: form.principal,
+              months: form.months,
+              monthly_contribution: form.monthly_contribution,
+              monthly_returns: DEMO_MONTHLY_RETURNS,
+              ter: form.ter / 100,
+              broker_fee_pct: form.broker_fee_pct / 100,
+              broker_fee_fixed: form.broker_fee_fixed,
+              holding_tax: form.holding_tax / 100,
+              iterations: mcForm.iterations,
+              block_size: mcForm.block_size,
+              seed: mcForm.seed,
+              target_value: mcForm.target_value,
+            };
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          principal: form.principal,
-          months: form.months,
-          monthly_contribution: form.monthly_contribution,
-          annual_return: form.annual_return / 100,
-          ter: form.ter / 100,
-          broker_fee_pct: form.broker_fee_pct / 100,
-          broker_fee_fixed: form.broker_fee_fixed,
-          holding_tax: form.holding_tax / 100,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      if (mode === "deterministic") {
+        setResult(await res.json());
+      } else {
+        setMcResult(await res.json());
+      }
       captureSimulation("investitii");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -134,14 +239,34 @@ export default function InvestitiiETF() {
     <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-10">
       <PageHeader
         eyebrow="Investiții · ETF / Fond"
-        title="Acumulare pe termen lung: SIP, TER și impozit pe câștig."
-        description="Investiție inițială + contribuții lunare (DCA), compunere end-of-month. Randamentul brut e redus de TER; comisioanele broker se scad la fiecare tranzacție; impozitul pe câștig se aplică la final."
+        title="Acumulare ETF: determinist sau Monte Carlo istoric."
+        description="Investiție inițială + contribuții lunare (DCA), TER, comisioane broker și impozit pe câștig. Modul Monte Carlo arată distribuții posibile, nu promisiuni de randament."
+      />
+
+      <ProductPicker
+        label="Fond ETF"
+        hint="Populează automat TER-ul și moneda din CMS."
+        items={funds}
+        value={selectedFundId}
+        onChange={applyFund}
+        renderLabel={(fund) =>
+          `${fund.ticker} · ${fund.provider} · ${fund.indiceReferinta} · TER ${fund.ter}%`
+        }
       />
 
       <form
         onSubmit={submit}
         className="card p-6 md:p-7 grid grid-cols-1 md:grid-cols-3 gap-5 reveal reveal-4"
       >
+        <Select
+          label="Mod simulare"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "deterministic", label: "Determinist" },
+            { value: "monte_carlo", label: "Monte Carlo" },
+          ]}
+        />
         <Field
           label="Sumă inițială"
           suffix="€"
@@ -195,6 +320,32 @@ export default function InvestitiiETF() {
           value={form.holding_tax}
           onChange={(v) => update("holding_tax", v)}
         />
+        {mode === "monte_carlo" && (
+          <>
+            <Field
+              label="Iterații"
+              value={mcForm.iterations}
+              onChange={(v) => updateMc("iterations", v)}
+            />
+            <Field
+              label="Block bootstrap"
+              suffix="luni"
+              value={mcForm.block_size}
+              onChange={(v) => updateMc("block_size", v)}
+            />
+            <Field
+              label="Target"
+              suffix="€"
+              value={mcForm.target_value}
+              onChange={(v) => updateMc("target_value", v)}
+            />
+            <Field
+              label="Seed"
+              value={mcForm.seed}
+              onChange={(v) => updateMc("seed", v)}
+            />
+          </>
+        )}
 
         <div className="md:col-span-3 flex items-center gap-4 pt-2 border-t border-[var(--border)]">
           <button type="submit" disabled={loading} className="btn-primary">
@@ -205,6 +356,168 @@ export default function InvestitiiETF() {
           )}
         </div>
       </form>
+
+      {mcResult && (() => {
+        const sym = currencySymbol(currency);
+        const conv = (v: number) => convertAmount(v, currency);
+        const years = form.months / 12;
+        const realFactor =
+          inflation.mode === "real" && inflation.rate > 0
+            ? (v: number) => deflate(v, inflation.rate, years)
+            : (v: number) => v;
+        return (
+          <section className="space-y-6 reveal reveal-fade">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InflationToggle value={inflation} onChange={setInflation} />
+              <CurrencyToggle value={currency} onChange={setCurrency} />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Stat
+                label="Mediană finală P50"
+                value={`${fmt(conv(realFactor(mcResult.final_distribution.p50)))} ${sym}`}
+                hint={`${mcResult.iterations.toLocaleString("ro-RO")} iterații · block ${mcResult.block_size} luni`}
+                accent
+              />
+              <Stat
+                label="Interval P10–P90"
+                value={`${fmt(conv(realFactor(mcResult.final_distribution.p10)))}–${fmt(conv(realFactor(mcResult.final_distribution.p90)))} ${sym}`}
+                hint="distribuție netă finală"
+              />
+              <Stat
+                label="Probabilitate pierdere"
+                value={`${fmt(mcResult.probability_of_loss * 100, 1)}%`}
+                hint="valoare finală netă sub total depus"
+              />
+              <Stat
+                label="Probabilitate target"
+                value={
+                  mcResult.probability_target_reached === null
+                    ? "—"
+                    : `${fmt(mcResult.probability_target_reached * 100, 1)}%`
+                }
+                hint={`${fmt(conv(mcForm.target_value))} ${sym}`}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Stat
+                label="CAGR median net"
+                value={`${fmt(mcResult.cagr_median_net * 100, 2)}%`}
+                hint="după TER, comisioane și impozit final"
+              />
+              <Stat
+                label="Volatilitate mediană"
+                value={`${fmt(mcResult.annualized_volatility_median * 100, 2)}%`}
+                hint="anualizată din seria lunară simulată"
+              />
+              <Stat
+                label="Sharpe simplificat"
+                value={
+                  mcResult.sharpe_median === null
+                    ? "—"
+                    : fmt(mcResult.sharpe_median, 2)
+                }
+                hint="rata fără risc 3% default backend"
+              />
+              <Stat
+                label="Drawdown median"
+                value={`${fmt(mcResult.max_drawdown_median * 100, 1)}%`}
+                hint="cel mai mare declin pe traiectorie"
+              />
+            </div>
+
+            <ChartCard title="Fan chart Monte Carlo P10 / P25 / P50 / P75 / P90">
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart
+                  data={mcResult.percentiles.map((r) => ({
+                    month: r.month,
+                    p10: conv(realFactor(r.p10)),
+                    p25: conv(realFactor(r.p25)),
+                    p50: conv(realFactor(r.p50)),
+                    p75: conv(realFactor(r.p75)),
+                    p90: conv(realFactor(r.p90)),
+                  }))}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e0" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "#57534e" }}
+                    stroke="#d6d3cd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#57534e" }}
+                    stroke="#d6d3cd"
+                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+                  />
+                  <Tooltip
+                    formatter={(v) => `${fmt(Number(v))} ${sym}`}
+                    labelFormatter={(m) => `Luna ${m}`}
+                    contentStyle={{
+                      background: "#fff",
+                      border: "1px solid #e7e5e0",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="p90"
+                    name="P90"
+                    stroke="#d6d3cd"
+                    fill="#15543d"
+                    fillOpacity={0.08}
+                    dot={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="p75"
+                    name="P75"
+                    stroke="#a8a29e"
+                    fill="#15543d"
+                    fillOpacity={0.12}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="p50"
+                    name="P50"
+                    stroke="#15543d"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="p25"
+                    name="P25"
+                    stroke="#78716c"
+                    strokeDasharray="4 4"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="p10"
+                    name="P10"
+                    stroke="#a85555"
+                    strokeDasharray="4 4"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <Disclaimer modul="etf" />
+            <DisclaimerNote>
+              Monte Carlo folosește momentan o serie demonstrativă de randamente
+              lunare până când importul de indici istorici este conectat la
+              backend. Rezultatele sunt scenarii ipotetice și nu constituie
+              recomandare de investiții.
+            </DisclaimerNote>
+          </section>
+        );
+      })()}
 
       {result && (() => {
         const sym = currencySymbol(currency);

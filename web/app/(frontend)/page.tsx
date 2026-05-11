@@ -22,8 +22,20 @@ const tools = [
   {
     href: "/tools/investitii",
     title: "Investiții ETF",
-    desc: "Acumulare DCA pe termen lung. Randament brut minus TER, comisioane broker și impozit pe câștig. CAGR net.",
+    desc: "Acumulare DCA pe termen lung, determinist sau Monte Carlo. TER, comisioane broker, impozit și CAGR net.",
     tag: "Investiții",
+  },
+  {
+    href: "/tools/unit-linked",
+    title: "Unit-Linked",
+    desc: "Prime lunare, taxe de alocare, unități inițiale/acumulare și defalcare explicită a costurilor.",
+    tag: "UL",
+  },
+  {
+    href: "/tools/comparator",
+    title: "Comparator 3-way",
+    desc: "Depozit, ETF și Unit-Linked pe același cash-flow. Valoare netă, taxe, câștig și CAGR.",
+    tag: "Comparator",
   },
 ];
 
@@ -43,10 +55,10 @@ const principles = [
 ];
 
 const stats = [
-  { value: "4", label: "Unelte live" },
-  { value: "19", label: "Produse CMS" },
+  { value: "6", label: "Unelte live" },
+  { value: "28", label: "Produse CMS" },
   { value: "0.01 RON", label: "Paritate Excel" },
-  { value: "54", label: "Teste matematice" },
+  { value: "86", label: "Teste matematice" },
 ];
 
 const steps = [
@@ -128,7 +140,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tools.map((t, i) => (
             <Link
               key={t.href}
@@ -224,13 +236,12 @@ export default function Home() {
         <div className="card p-8 md:p-12 bg-gradient-to-br from-[var(--surface)] to-[var(--accent-soft)]">
           <div className="max-w-2xl">
             <h3 className="font-serif h-card tracking-tight">
-              În curând: comparator 3-way UL / ETF / Depozit cu Monte Carlo
-              istoric.
+              Acum: ETF cu Monte Carlo, Unit-Linked și comparator 3-way.
             </h3>
             <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
-              Fan chart P10/P50/P90, scenarii „cel mai rău caz istoric", Sharpe
-              Ratio, Regula 72 și TCO — toate într-o singură vizualizare. Pentru
-              consultanți care vor să arate clar trade-off-ul între produse.
+              Fan chart P10/P50/P90 pe ETF, simulare Unit-Linked cu taxe
+              explicite și comparație Depozit / ETF / UL pe același cash-flow.
+              Următorul pas este conectarea randamentelor istorice reale din CMS.
             </p>
           </div>
         </div>

@@ -288,6 +288,24 @@ const fonduriEtf = [
   },
 ]
 
+const produseUl = [
+  {
+    nume: 'UL demonstrativ — Dinamic Invest style',
+    provider: 'Exemplu generic',
+    moneda: 'RON' as const,
+    fixedInsuranceFee: 13.5,
+    allocationFeeLow: 5,
+    allocationFeeHigh: 2.5,
+    allocationThreshold: 6000,
+    initialUnitsMonths: 24,
+    expenseRecoveryAnnual: 3,
+    adminFeeAnnual: 1.29,
+    sourceUrl: 'https://example.com/ul-demo',
+    note:
+      'Produs demonstrativ până la clarificarea licențierii parametrilor Allianz Dinamic Invest.',
+  },
+]
+
 const inflatii = [
   { nume: 'RON 2025', moneda: 'RON' as const, an: 2025, rata: 5.2, default: true },
   { nume: 'RON 2026', moneda: 'RON' as const, an: 2026, rata: 4.5, default: true },
@@ -303,7 +321,12 @@ const cursuri = [
 
 async function existsBySlug(
   payload: Awaited<ReturnType<typeof getPayload>>,
-  collection: 'produse-credit' | 'dobanzi-depozit' | 'fonduri-etf' | 'inflatii',
+  collection:
+    | 'produse-credit'
+    | 'dobanzi-depozit'
+    | 'fonduri-etf'
+    | 'produse-ul'
+    | 'inflatii',
   nume: string,
 ) {
   const res = await payload.find({
@@ -360,6 +383,20 @@ async function main() {
       data: { ...etf, activ: true, effectiveFrom: today },
     })
     console.log(`  ✓  ETF: ${etf.ticker} — ${etf.nume}`)
+    created++
+  }
+
+  for (const ul of produseUl) {
+    if (await existsBySlug(payload, 'produse-ul', ul.nume)) {
+      console.log(`  ⏭  Skip (exists): ${ul.nume}`)
+      skipped++
+      continue
+    }
+    await payload.create({
+      collection: 'produse-ul',
+      data: { ...ul, activ: true, effectiveFrom: today },
+    })
+    console.log(`  ✓  UL: ${ul.provider} — ${ul.nume}`)
     created++
   }
 
