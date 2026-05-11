@@ -9,7 +9,9 @@ import { CursuriValutare } from './collections/CursuriValutare'
 import { Disclaimere } from './collections/Disclaimere'
 import { DobanziDepozit } from './collections/DobanziDepozit'
 import { Firme } from './collections/Firme'
+import { FonduriETF } from './collections/FonduriETF'
 import { Inflatii } from './collections/Inflatii'
+import { IndiciIstorici } from './collections/IndiciIstorici'
 import { Media } from './collections/Media'
 import { ProduseCredit } from './collections/ProduseCredit'
 import { Users } from './collections/Users'
@@ -58,6 +60,8 @@ export default buildConfig({
     Media,
     ProduseCredit,
     DobanziDepozit,
+    FonduriETF,
+    IndiciIstorici,
     CursuriValutare,
     Inflatii,
     Disclaimere,

@@ -26,6 +26,48 @@ export type DobandaDepozit = {
   activ: boolean;
 };
 
+export type FondETF = {
+  id: string;
+  nume: string;
+  ticker: string;
+  isin?: string | null;
+  provider: string;
+  moneda: "EUR" | "RON" | "USD";
+  ter: number;
+  indiceReferinta:
+    | "SP500"
+    | "MSCI_WORLD"
+    | "FTSE_ALL_WORLD"
+    | "STOXX_600"
+    | "BET"
+    | "OTHER";
+  exchange?: string | null;
+  accumulating: boolean;
+  sursaTer?: "manual" | "factsheet" | "yfinance";
+  sourceUrl?: string | null;
+  activ: boolean;
+};
+
+export type RandamentIndice = {
+  id: string;
+  nume: string;
+  indice:
+    | "SP500"
+    | "MSCI_WORLD"
+    | "FTSE_ALL_WORLD"
+    | "STOXX_600"
+    | "BET"
+    | "OTHER";
+  data: string;
+  randamentLunar: number;
+  moneda: "EUR" | "RON" | "USD";
+  sursa: "csv" | "manual" | "yfinance" | "licensed_feed";
+  sourceUrl?: string | null;
+  checksum?: string | null;
+  importBatch?: string | null;
+  activ: boolean;
+};
+
 type PayloadListResponse<T> = {
   docs: T[];
   totalDocs: number;
@@ -79,6 +121,11 @@ export const fetchProduseCredit = () =>
 
 export const fetchDobanziDepozit = () =>
   fetchCollection<DobandaDepozit>("dobanzi-depozit");
+
+export const fetchFonduriETF = () => fetchCollection<FondETF>("fonduri-etf");
+
+export const fetchIndiciIstorici = () =>
+  fetchCollection<RandamentIndice>("indici-istorici");
 
 export const fetchInflatii = () => fetchCollection<Inflatie>("inflatii");
 

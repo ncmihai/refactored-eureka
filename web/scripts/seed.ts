@@ -174,6 +174,120 @@ const dobanziDepozit = [
   },
 ]
 
+const fonduriEtf = [
+  {
+    nume: 'Vanguard FTSE All-World UCITS ETF Acc',
+    ticker: 'VWCE',
+    isin: 'IE00BK5BQT80',
+    provider: 'Vanguard',
+    moneda: 'EUR' as const,
+    ter: 0.22,
+    indiceReferinta: 'FTSE_ALL_WORLD' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://www.vanguard.co.uk/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'iShares Core S&P 500 UCITS ETF Acc',
+    ticker: 'SXR8',
+    isin: 'IE00B5BMR087',
+    provider: 'iShares',
+    moneda: 'EUR' as const,
+    ter: 0.07,
+    indiceReferinta: 'SP500' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://www.ishares.com/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'Vanguard S&P 500 UCITS ETF Acc',
+    ticker: 'VUAA',
+    isin: 'IE00BFMXXD54',
+    provider: 'Vanguard',
+    moneda: 'EUR' as const,
+    ter: 0.07,
+    indiceReferinta: 'SP500' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://www.vanguard.co.uk/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'iShares Core MSCI World UCITS ETF Acc',
+    ticker: 'EUNL',
+    isin: 'IE00B4L5Y983',
+    provider: 'iShares',
+    moneda: 'EUR' as const,
+    ter: 0.2,
+    indiceReferinta: 'MSCI_WORLD' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://www.ishares.com/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'Xtrackers MSCI World UCITS ETF 1C',
+    ticker: 'XDWD',
+    isin: 'IE00BJ0KDQ92',
+    provider: 'Xtrackers',
+    moneda: 'EUR' as const,
+    ter: 0.19,
+    indiceReferinta: 'MSCI_WORLD' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://etf.dws.com/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'iShares STOXX Europe 600 UCITS ETF DE',
+    ticker: 'EXSA',
+    isin: 'DE0002635307',
+    provider: 'iShares',
+    moneda: 'EUR' as const,
+    ter: 0.2,
+    indiceReferinta: 'STOXX_600' as const,
+    exchange: 'XETRA',
+    accumulating: false,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://www.ishares.com/',
+    note: 'Date exemplu — distribuție, verifică clasă/listing înainte de pitch.',
+  },
+  {
+    nume: 'Xtrackers STOXX Europe 600 UCITS ETF 1C',
+    ticker: 'XSX6',
+    isin: 'LU0328475792',
+    provider: 'Xtrackers',
+    moneda: 'EUR' as const,
+    ter: 0.2,
+    indiceReferinta: 'STOXX_600' as const,
+    exchange: 'XETRA',
+    accumulating: true,
+    sursaTer: 'factsheet' as const,
+    sourceUrl: 'https://etf.dws.com/',
+    note: 'Date exemplu — verifică TER/listing în factsheet înainte de pitch.',
+  },
+  {
+    nume: 'Patria-TradeVille BET ETF',
+    ticker: 'TVBETETF',
+    provider: 'Patria Asset Management',
+    moneda: 'RON' as const,
+    ter: 1.8,
+    indiceReferinta: 'BET' as const,
+    exchange: 'BVB',
+    accumulating: false,
+    sursaTer: 'manual' as const,
+    sourceUrl: 'https://patriafonduri.ro/',
+    note: 'Date exemplu pentru expunere BET — verifică factsheet și costuri curente înainte de pitch.',
+  },
+]
+
 const inflatii = [
   { nume: 'RON 2025', moneda: 'RON' as const, an: 2025, rata: 5.2, default: true },
   { nume: 'RON 2026', moneda: 'RON' as const, an: 2026, rata: 4.5, default: true },
@@ -187,7 +301,11 @@ const cursuri = [
   { pereche: 'USD_RON' as const, data: '2026-04-17', curs: 4.5823, sursa: 'manual' as const },
 ]
 
-async function existsBySlug(payload: Awaited<ReturnType<typeof getPayload>>, collection: 'produse-credit' | 'dobanzi-depozit' | 'inflatii', nume: string) {
+async function existsBySlug(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  collection: 'produse-credit' | 'dobanzi-depozit' | 'fonduri-etf' | 'inflatii',
+  nume: string,
+) {
   const res = await payload.find({
     collection,
     where: { nume: { equals: nume } },
@@ -228,6 +346,20 @@ async function main() {
       data: { ...d, activ: true, effectiveFrom: today },
     })
     console.log(`  ✓  Depozit: ${d.banca} — ${d.nume}`)
+    created++
+  }
+
+  for (const etf of fonduriEtf) {
+    if (await existsBySlug(payload, 'fonduri-etf', etf.nume)) {
+      console.log(`  ⏭  Skip (exists): ${etf.nume}`)
+      skipped++
+      continue
+    }
+    await payload.create({
+      collection: 'fonduri-etf',
+      data: { ...etf, activ: true, effectiveFrom: today },
+    })
+    console.log(`  ✓  ETF: ${etf.ticker} — ${etf.nume}`)
     created++
   }
 

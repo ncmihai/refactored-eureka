@@ -106,7 +106,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Navbar dropdown Tools (scalabil — click-outside + Escape + route-change auto-close)
 
 ### QA MVP
-- [/] `pytest` — suite paritate cu Excel. Curent: **60 teste verzi** (6 credit + 16 optimizare + 13 depozit + 19 investiții ETF + 5 cross-cutting + 1 bias-fix). Target inițial ≥20/modul încă nu atins pe credit.
+- [/] `pytest` — suite paritate cu Excel. Curent: **70 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 investiții ETF). Target inițial ≥20/modul încă nu atins pe credit/depozit/investiții.
 - [ ] Property-based tests (Hypothesis) pentru invarianți credit
 - [ ] Playwright E2E — flow „consultant deschide sesiune → credit → PDF”
 
@@ -125,37 +125,107 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 ---
 
-## Backlog — Faza 2 (Investiții & Monte Carlo)
+## Backlog — Faza 2 (Investiții, Monte Carlo & Beta B2B)
 
-- [ ] Colecție CMS `Produse_UL` (versionate cu `effective_from`/`effective_to`)
-- [ ] Colecție CMS `Fonduri_ETF`
-- [ ] Colecție CMS `Indici_Istorici` (S&P 500, MSCI World, STOXX 600, BET — CSV randamente lunare)
-- [ ] Simulator UL Stand-alone (parametrizat CMS; Allianz Dinamic Invest ca prim produs)
-- [ ] Integrare `yfinance` + caching Redis pe ticker/TER
-- [ ] Extindere ETF cu Monte Carlo historical bootstrap (block 12 luni, 10k iter) — motorul determinist e live (Faza 1); rămâne partea de distribuție
-- [ ] Monte Carlo historical bootstrap — universe S&P/MSCI/STOXX/BET, block 12 luni, 10k iter vectorizat
-- [ ] Fan chart P10/P25/P50/P75/P90 în UI
-- [ ] Scenarii „cel mai rău caz istoric” (start 1929/1999/2000/2008)
-- [ ] Comparator Suprem 3-way (UL / ETF / Depozit)
-- [ ] Metrici: Sharpe Ratio, Regula 72, TCO, CAGR net, Drawdown maxim
-- [ ] Salvare sesiune cu ID unic + link shareable
-- [ ] Snapshot parametri pe simulare (versionare §9)
-- [ ] Indexare anuală activă în toate modulele de acumulare
-- [ ] Top-up-uri ad-hoc în UL și ETF
+**Obiectiv:** transformăm platforma din 4 calculatoare funcționale într-un demo investițional convingător pentru consultanți: ETF deterministic + Monte Carlo, UL parametrizat din CMS, comparator 3-way și sesiuni salvabile.
+
+### Faza 2A — Data foundation investiții
+- [x] Colecție CMS `Fonduri_ETF` — ticker, nume, provider, ISIN, TER, monedă, indice referință, activ, effectiveFrom/To, versions
+- [x] Seed `Fonduri_ETF` cu 8 ETF-uri uzuale pentru consultanță RO/EU (S&P 500, MSCI World, FTSE All-World, STOXX Europe, BET exposure demonstrativ)
+- [x] Colecție CMS `Indici_Istorici` — indice, monedă, dată lunară, randament lunar, sursă, upload CSV, checksum import
+- [x] Script import CSV randamente lunare pentru S&P 500, MSCI World, STOXX 600, BET; validare duplicate + opțiune `--update`
+- [ ] Integrare `yfinance` doar ca sursă auxiliară pentru ticker metadata/TER unde e stabil; randamentele istorice rămân în DB pentru reproducibilitate
+- [ ] Cache Redis pentru seriile istorice (`index_returns:{symbol}` TTL 24h) + endpoint diagnostic pentru freshness
+- [ ] Politică surse date: ce poate fi public, ce trebuie citat, ce date nu includem până avem licență clară
+
+### Faza 2B — ETF Monte Carlo
+- [ ] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
+- [ ] Endpoint `POST /api/v1/investitii/monte-carlo` — reutilizează input-ul ETF deterministic + `index_symbol`, `iterations`, `block_size`
+- [ ] Output percentiles lunar: P10/P25/P50/P75/P90 + final distribution + probability of loss + probability target reached
+- [ ] Scenarii worst-start deterministic: 1929, 1999, 2000, 2008 unde seria permite; fallback explicat dacă indicele nu are istoric suficient
+- [ ] Metrici investiții: CAGR median/net, volatilitate anualizată, Sharpe simplificat, max drawdown pe scenarii, Regula 72
+- [ ] Teste unitare: shape output, seed determinism, no-negative contribution bugs, percentile monotonicity, tax/fee invariants
+- [ ] Benchmark local: 10k × 30 ani sub 500ms pentru motor pur sau documentăm prag realist înainte de optimizare
+- [ ] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, tabel final distribution, copy explicativ fără promisiuni de randament
+
+### Faza 2C — Unit-Linked stand-alone
+- [ ] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
+- [ ] Seed primul produs UL demonstrativ (Allianz Dinamic Invest) doar cu parametri licențiați/publici; dacă licența e neclară, etichetă „exemplu generic”
+- [ ] Motor UL deterministic în backend — cash-flow lunar, unități inițiale/acumulare, taxe pe sold, taxe fixe, randament net
+- [ ] Endpoint `POST /api/v1/unit-linked/simulate`
+- [ ] UI `tools/unit-linked` — formular, produs CMS dropdown, grafic sold vs contribuții, defalcare taxe, disclaimer MiFID/insurance
+- [ ] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length
+- [ ] Capture analytics `captureSimulation("unit_linked")` + disclaimer CMS `modul="ul"`
+
+### Faza 2D — Comparator investițional 3-way
+- [ ] Definește contract comun de output pentru Depozit / ETF / UL: contribuții, valoare netă, taxe, taxe procentuale, CAGR, risk metrics, schedule
+- [ ] Endpoint `POST /api/v1/comparator/simulate` — rulează Depozit + ETF + UL cu același cash-flow și returnează comparație normalizată
+- [ ] UI `tools/comparator` — 3 coloane, grafic net value, tabel taxe, risc, lichiditate, recomandare neutră pe criterii, fără „cel mai bun produs” absolut
+- [ ] Metrici comparative: TCO, CAGR net, Sharpe, drawdown, probabilitate target, Regula 72
+- [ ] Disclaimer explicit: comparație educațională, nu recomandare personalizată; produsul potrivit depinde de profil MiFID și obiective
+- [ ] Teste backend comparator: aceeași contribuție brută pentru toate modulele, taxe agregate corect, output stabil la inputs extreme
+
+### Faza 2E — Sesiuni, PDF & pitch readiness
+- [ ] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt
+- [ ] Salvare sesiune cu ID unic + link shareable; public view read-only fără PII
+- [ ] Snapshot complet parametri produse pe simulare (nu FK live) pentru reproducibilitate legală/comercială
+- [ ] Export PDF v1 pentru Credit + Optimizare; include logo firmă, disclaimer, timestamp, hash input/output
+- [ ] Export PDF v2 pentru ETF/UL/Comparator cu fan chart și surse date
+- [ ] Admin dashboard: ultimele simulări, top tools, exporturi PDF, conversie guest → consultant demo
+- [ ] Script demo data pentru pitch: firmă demo, consultant demo, produse demo, 3 simulări saved links
+- [ ] Playwright E2E beta: guest rulează ETF MC → salvează sesiune → export PDF → link shareable deschis read-only
+- [ ] Pregătire demo OVB/Safety: 3 scenarii reale, 1 pagină pitch, listă întrebări frecvente consultanți
 
 ---
 
-## Backlog — Faza 3 (Lifecycle & Scalare)
+## Backlog — Faza 3 (Lifecycle, Commercializare & Scalare)
 
-- [ ] Gap Pensie + Monte Carlo pe atingere target
+**Obiectiv:** după demo investițional, platforma devine produs SaaS utilizabil de firme mici: auth complet, multi-tenancy real, module lifecycle, conținut SEO și infrastructură fără cold-start.
+
+### Faza 3A — Auth, tenancy & commercial access
+- [ ] Auth app-level pe Payload Users — login consultant, logout, protected routes pentru saved sessions/admin firmă
+- [ ] Roluri enforce în UI + API: Super Admin / Admin Firmă / Consultant / Guest
+- [ ] Multi-tenancy strict: `firm_id` pe simulări, produse custom firmă, logo PDF; acces filtrat by user.firm
+- [ ] Row-level security Postgres sau access-control Payload echivalent documentat; test de izolare cross-firm
+- [ ] Flow invitație consultant: Admin Firmă trimite email link, user setează parola, asociere automată la firmă
+- [ ] Plan abonament intern: trial firmă, active consultants count, status abonament, limitări export/saved sessions
+- [ ] Audit log pentru modificări CMS sensibile: produse, taxe, disclaimere, users, firme
+
+### Faza 3B — Lifecycle tools
+- [ ] Analizor Profil Risc MiFID II simplificat — scor Conservator/Moderat/Dinamic/Agresiv, mapat la default ETF/UL
+- [ ] Gap Pensie + Monte Carlo pe atingere target — probabilitate target, contribuție necesară, scenarii real/nominal
 - [ ] Siguranța Financiară (decumulation) — mod „Venit Pasiv Sustenabil” și „Anuitate Fixă”
-- [ ] Modelare Piloni II și III (deductibilitate 400 EUR/an)
-- [ ] Viitorul Copilului cu retrageri programate (18-22 ani)
-- [ ] Analizor Profil Risc MiFID II simplificat
-- [ ] Blog educațional activat (Nicu scrie conținutul)
-- [ ] SEO polish: schema.org, sitemap, hreflang, OG/Twitter cards
-- [ ] Migrare Render Free → Starter
-- [ ] Evaluare feed de date plătit (EOD Historical Data / alternativă proprie)
+- [ ] Modelare Piloni II și III — contribuții, deductibilitate 400 EUR/an, estimare conservatoare, disclaimere fiscale
+- [ ] Viitorul Copilului — acumulare + retrageri programate 18-22 ani, warning sold insuficient
+- [ ] Top-up-uri ad-hoc generalizate pe ETF/UL/Viitorul Copilului
+- [ ] Indexare anuală activă în toate modulele de acumulare și decumulation
+- [ ] Contract comun pentru module lifecycle ca să poată intra ulterior în Comparator / PDF / saved sessions
+
+### Faza 3C — Content, SEO & acquisition
+- [ ] Colecție CMS `Continut_Educational` — articole, categorii, autor, limba, SEO title/description, status publish
+- [ ] Blog educațional activat — listă, detaliu articol, related tools CTA, legal disclaimer
+- [ ] i18n RO/EN — routing, labels, CMS dual-field sau locale support Payload, fallback RO
+- [ ] SEO polish: schema.org Article/SoftwareApplication, sitemap, robots, canonical, hreflang, OG/Twitter cards
+- [ ] Landing B2B pentru consultanți — demo request, tool screenshots, beneficii, legal positioning
+- [ ] Landing B2C educațională — calculator hub + articole evergreen, fără promisiuni investiționale
+- [ ] Analytics funnel PostHog: pageview → tool run → PDF export → saved session → demo request
+
+### Faza 3D — Infrastructure scaling
+- [ ] Migrare Render Free → Starter înainte de primul beta extern stabil; elimină cold-start-ul de ~30s
+- [ ] Decide hosting backend pe termen mediu: Render Starter vs Fly.io/Railway/VPS, criterii cost/latency/ops
+- [ ] Rate limiting pe API public + protecție pentru endpointuri Monte Carlo costisitoare
+- [ ] Cache rezultate Monte Carlo pe hash input + index version; TTL și invalidare la import nou de date istorice
+- [ ] Job background pentru importuri date/refresh yfinance dacă request-time devine prea lent
+- [ ] DB migrations controlate pentru Payload/Neon; procedură dev branch → validate → prod
+- [ ] Backup/restore drill Neon înainte de a porni firme beta reale
+- [ ] Error budget operațional: health checks, Sentry alerts, PostHog dashboard, uptime check extern
+
+### Faza 3E — Data feed & compliance scale
+- [ ] Evaluare feed de date plătit (EOD Historical Data / Stooq / Nasdaq Data Link / alternativă proprie)
+- [ ] Matrice licențiere date: ce putem afișa în UI, ce putem stoca, ce putem exporta în PDF, ce cere atribuire
+- [ ] Politică TOS/Privacy/Cookies pentru B2B beta, inclusiv analytics opt-out și zero PII în simulări
+- [ ] Revizuire disclaimere cu avocat/consultant compliance înainte de demo plătit
+- [ ] Proces update parametri fiscali anual: impozit dobândă, capital gains, dividende, Pilon III
 
 ---
 
