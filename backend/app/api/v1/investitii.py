@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.finance.investitii import (
     InvestitieInput,
@@ -53,6 +53,7 @@ class MonteCarloRequest(BaseModel):
     months: int = Field(..., gt=0, le=720)
     monthly_contribution: Decimal = Field(Decimal("0"), ge=0)
     monthly_returns: list[Decimal] = Field(..., min_length=1)
+    monthly_return_dates: list[str] | None = None
     ter: Decimal = Field(Decimal("0.002"), ge=0, le=1)
     broker_fee_pct: Decimal = Field(Decimal("0"), ge=0, le=1)
     broker_fee_fixed: Decimal = Field(Decimal("0"), ge=0)
@@ -69,6 +70,14 @@ class MonteCarloRequest(BaseModel):
         if any(item <= Decimal("-1") for item in value):
             raise ValueError("monthly_returns cannot contain values <= -1")
         return value
+
+    @model_validator(mode="after")
+    def validate_monthly_return_dates(self) -> "MonteCarloRequest":
+        if self.monthly_return_dates is not None and len(self.monthly_return_dates) != len(
+            self.monthly_returns
+        ):
+            raise ValueError("monthly_return_dates must match monthly_returns length")
+        return self
 
 
 class MonteCarloPercentileResponse(BaseModel):
@@ -88,6 +97,23 @@ class MonteCarloDistributionResponse(BaseModel):
     p90: float
 
 
+class MonteCarloCrisisPointResponse(BaseModel):
+    month: int
+    value: float
+
+
+class MonteCarloCrisisScenarioResponse(BaseModel):
+    label: str
+    start_year: int
+    status: str
+    start_date: str | None
+    months_available: int
+    final_net_value: float | None
+    cagr_net: float | None
+    max_drawdown: float | None
+    line: list[MonteCarloCrisisPointResponse]
+
+
 class MonteCarloResponse(BaseModel):
     percentiles: list[MonteCarloPercentileResponse]
     final_distribution: MonteCarloDistributionResponse
@@ -104,6 +130,7 @@ class MonteCarloResponse(BaseModel):
     total_contributions_gross: float
     total_contributions_net: float
     total_broker_fees: float
+    crisis_scenarios: list[MonteCarloCrisisScenarioResponse]
 
 
 @router.post("/simulate", response_model=InvestitieResponse)
@@ -145,4 +172,21 @@ def simulate_monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
         total_contributions_gross=result.total_contributions_gross,
         total_contributions_net=result.total_contributions_net,
         total_broker_fees=result.total_broker_fees,
+        crisis_scenarios=[
+            MonteCarloCrisisScenarioResponse(
+                label=scenario.label,
+                start_year=scenario.start_year,
+                status=scenario.status,
+                start_date=scenario.start_date,
+                months_available=scenario.months_available,
+                final_net_value=scenario.final_net_value,
+                cagr_net=scenario.cagr_net,
+                max_drawdown=scenario.max_drawdown,
+                line=[
+                    MonteCarloCrisisPointResponse(**point.__dict__)
+                    for point in scenario.line
+                ],
+            )
+            for scenario in result.crisis_scenarios
+        ],
     )

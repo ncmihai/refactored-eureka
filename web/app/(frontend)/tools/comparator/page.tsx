@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { captureSimulation } from "@/lib/posthog";
+import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   CartesianGrid,
   Legend,
@@ -75,6 +76,7 @@ export default function ComparatorPage() {
     holding_tax: 10,
   });
   const [result, setResult] = useState<ComparatorResponse | null>(null);
+  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<CurrencyState>({
@@ -93,24 +95,32 @@ export default function ComparatorPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setLastInputSnapshot(null);
     try {
+      const requestPayload = {
+        principal: form.principal,
+        monthly_contribution: form.monthly_contribution,
+        months: form.months,
+        deposit_annual_rate: form.deposit_annual_rate / 100,
+        etf_annual_return: form.etf_annual_return / 100,
+        etf_ter: form.etf_ter / 100,
+        ul_annual_return: form.ul_annual_return / 100,
+        ul_admin_fee_annual_pct: form.ul_admin_fee_annual_pct / 100,
+        holding_tax: form.holding_tax / 100,
+      };
       const res = await fetch(`${BACKEND_URL}/api/v1/comparator/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          principal: form.principal,
-          monthly_contribution: form.monthly_contribution,
-          months: form.months,
-          deposit_annual_rate: form.deposit_annual_rate / 100,
-          etf_annual_return: form.etf_annual_return / 100,
-          etf_ter: form.etf_ter / 100,
-          ul_annual_return: form.ul_annual_return / 100,
-          ul_admin_fee_annual_pct: form.ul_admin_fee_annual_pct / 100,
-          holding_tax: form.holding_tax / 100,
-        }),
+        body: JSON.stringify(requestPayload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      const response = (await res.json()) as ComparatorResponse;
+      setResult(response);
+      setLastInputSnapshot({
+        form,
+        requestPayload,
+        currency,
+      });
       captureSimulation("comparator");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -259,6 +269,13 @@ export default function ComparatorPage() {
       {result && (
         <section className="space-y-6 reveal reveal-fade">
           <CurrencyToggle value={currency} onChange={setCurrency} />
+          {lastInputSnapshot !== null && (
+            <SaveSimulationPanel
+              tool="comparator"
+              inputSnapshot={lastInputSnapshot}
+              outputSummary={result}
+            />
+          )}
           <Stat
             label="Lider numeric"
             value={labels[result.leader]}

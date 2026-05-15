@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchDobanziDepozit, type DobandaDepozit } from "@/lib/cms";
 import { captureSimulation } from "@/lib/posthog";
+import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   Area,
   AreaChart,
@@ -74,10 +75,13 @@ export default function DepozitBancar() {
     capitalization: "monthly" as "monthly" | "at_maturity",
   });
   const [result, setResult] = useState<DepozitResponse | null>(null);
+  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deposits, setDeposits] = useState<DobandaDepozit[]>([]);
   const [selectedDepositId, setSelectedDepositId] = useState<string>("");
+  const [lastProductSnapshots, setLastProductSnapshots] =
+    useState<unknown>(undefined);
   const [inflation, setInflation] = useState<InflationState>({
     mode: "nominal",
     rate: 0,
@@ -114,26 +118,44 @@ export default function DepozitBancar() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
+  const selectedDeposit = deposits.find((x) => x.id === selectedDepositId);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setLastInputSnapshot(null);
+    setLastProductSnapshots(undefined);
     try {
+      const requestPayload = {
+        principal: form.principal,
+        months: form.months,
+        annual_rate: form.annual_rate / 100,
+        monthly_contribution: form.monthly_contribution,
+        tax_rate: form.tax_rate / 100,
+        capitalization: form.capitalization,
+      };
       const res = await fetch(`${BACKEND_URL}/api/v1/depozit/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          principal: form.principal,
-          months: form.months,
-          annual_rate: form.annual_rate / 100,
-          monthly_contribution: form.monthly_contribution,
-          tax_rate: form.tax_rate / 100,
-          capitalization: form.capitalization,
-        }),
+        body: JSON.stringify(requestPayload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      const response = (await res.json()) as DepozitResponse;
+      const productSnapshots = selectedDeposit
+        ? { depozitBancar: selectedDeposit }
+        : undefined;
+      setResult(response);
+      setLastProductSnapshots(productSnapshots);
+      setLastInputSnapshot({
+        form,
+        selectedDepositId,
+        productSnapshots,
+        requestPayload,
+        currency,
+        inflation,
+      });
       captureSimulation("depozit");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -223,6 +245,15 @@ export default function DepozitBancar() {
             <InflationToggle value={inflation} onChange={setInflation} />
             <CurrencyToggle value={currency} onChange={setCurrency} />
           </div>
+
+          {lastInputSnapshot !== null && (
+            <SaveSimulationPanel
+              tool="depozit"
+              inputSnapshot={lastInputSnapshot}
+              outputSummary={result}
+              productSnapshots={lastProductSnapshots}
+            />
+          )}
 
           {(() => {
             const years = form.months / 12;

@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 from math import sqrt
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -63,6 +64,7 @@ class MonteCarloInput:
     principal: Decimal
     months: int
     monthly_returns: list[Decimal]
+    monthly_return_dates: list[str] | None = None
     monthly_contribution: Decimal = Decimal("0")
     ter: Decimal = Decimal("0.002")
     broker_fee_pct: Decimal = Decimal("0")
@@ -95,6 +97,25 @@ class MonteCarloDistribution:
 
 
 @dataclass(frozen=True)
+class MonteCarloCrisisPoint:
+    month: int
+    value: float
+
+
+@dataclass(frozen=True)
+class MonteCarloCrisisScenario:
+    label: str
+    start_year: int
+    status: Literal["available", "insufficient_history", "insufficient_horizon"]
+    start_date: str | None = None
+    months_available: int = 0
+    final_net_value: float | None = None
+    cagr_net: float | None = None
+    max_drawdown: float | None = None
+    line: list[MonteCarloCrisisPoint] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class MonteCarloResult:
     percentiles: list[MonteCarloPercentileRow]
     final_distribution: MonteCarloDistribution
@@ -111,6 +132,17 @@ class MonteCarloResult:
     total_contributions_gross: float
     total_contributions_net: float
     total_broker_fees: float
+    crisis_scenarios: list[MonteCarloCrisisScenario] = field(default_factory=list)
+
+
+CRISIS_SCENARIOS: tuple[tuple[int, str], ...] = (
+    (1929, "1929 crash"),
+    (1973, "1973-74 inflation bear market"),
+    (2000, "2000 dot-com"),
+    (2008, "2008 financial crisis"),
+    (2020, "2020 Covid shock"),
+    (2022, "2022 rate shock"),
+)
 
 
 def _apply_broker_fee(
@@ -258,18 +290,7 @@ def _percentile_row(month: int, values: NDArray[np.float64]) -> MonteCarloPercen
     )
 
 
-def simulate_investitie_monte_carlo(inp: MonteCarloInput) -> MonteCarloResult:
-    """Historical block-bootstrap Monte Carlo for the ETF cash-flow model.
-
-    `monthly_returns` are decimal monthly returns, e.g. 0.0235 for +2.35%.
-    Monthly account paths are gross account values before final exit tax.
-    Final distribution is net of holding tax, matching `simulate_investitie`.
-    """
-    sampled_returns = _bootstrap_monthly_returns(inp)
-
-    ter_monthly = _to_float(inp.ter) / 12.0
-    effective_returns = sampled_returns - ter_monthly
-
+def _cashflow_arrays(inp: MonteCarloInput) -> tuple[NDArray[np.float64], NDArray[np.float64], float, float, float]:
     principal = _to_float(inp.principal)
     monthly_contribution = _to_float(inp.monthly_contribution)
     broker_fee_pct = _to_float(inp.broker_fee_pct)
@@ -285,16 +306,152 @@ def simulate_investitie_monte_carlo(inp: MonteCarloInput) -> MonteCarloResult:
             float(amount), broker_fee_pct, broker_fee_fixed
         )
 
-    balances = np.empty((inp.iterations, inp.months), dtype=np.float64)
-    current = np.zeros(inp.iterations, dtype=np.float64)
-    for month_index in range(inp.months):
+    return (
+        contribution_net,
+        broker_fees,
+        float(np.sum(contribution_gross)),
+        float(np.sum(contribution_net)),
+        float(np.sum(broker_fees)),
+    )
+
+
+def _simulate_balance_paths(
+    effective_returns: NDArray[np.float64],
+    contribution_net: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    if effective_returns.ndim == 1:
+        effective_returns = effective_returns.reshape(1, -1)
+
+    balances = np.empty_like(effective_returns, dtype=np.float64)
+    current = np.zeros(effective_returns.shape[0], dtype=np.float64)
+    for month_index in range(effective_returns.shape[1]):
         current = (current + contribution_net[month_index]) * (1.0 + effective_returns[:, month_index])
         balances[:, month_index] = current
 
+    return balances
+
+
+def _max_drawdown_for_path(balances: NDArray[np.float64]) -> float:
+    running_max = np.maximum.accumulate(balances)
+    drawdowns = np.divide(
+        balances,
+        running_max,
+        out=np.ones_like(balances),
+        where=running_max > 0,
+    ) - 1.0
+    return float(np.min(drawdowns))
+
+
+def _normalize_month(value: str) -> str:
+    return value[:7]
+
+
+def _crisis_scenarios(
+    inp: MonteCarloInput,
+    contribution_net: NDArray[np.float64],
+    total_contributions_gross: float,
+    total_contributions_net: float,
+) -> list[MonteCarloCrisisScenario]:
+    if not inp.monthly_return_dates:
+        return [
+            MonteCarloCrisisScenario(
+                label=label,
+                start_year=year,
+                status="insufficient_history",
+            )
+            for year, label in CRISIS_SCENARIOS
+        ]
+
+    source_returns = np.asarray([_to_float(value) for value in inp.monthly_returns], dtype=np.float64)
+    dates = [_normalize_month(value) for value in inp.monthly_return_dates]
+    ter_monthly = _to_float(inp.ter) / 12.0
+    holding_tax = _to_float(inp.holding_tax)
+    years = inp.months / 12.0
+    scenarios: list[MonteCarloCrisisScenario] = []
+
+    for start_year, label in CRISIS_SCENARIOS:
+        start_index = next(
+            (index for index, date in enumerate(dates) if date.startswith(f"{start_year}-")),
+            None,
+        )
+        if start_index is None:
+            scenarios.append(
+                MonteCarloCrisisScenario(
+                    label=label,
+                    start_year=start_year,
+                    status="insufficient_history",
+                )
+            )
+            continue
+
+        months_available = len(source_returns) - start_index
+        if months_available < inp.months:
+            scenarios.append(
+                MonteCarloCrisisScenario(
+                    label=label,
+                    start_year=start_year,
+                    status="insufficient_horizon",
+                    start_date=dates[start_index],
+                    months_available=months_available,
+                )
+            )
+            continue
+
+        scenario_returns: NDArray[np.float64] = (
+            source_returns[start_index : start_index + inp.months] - ter_monthly
+        ).astype(np.float64)
+        balances = _simulate_balance_paths(scenario_returns, contribution_net)[0]
+        final_gross_value = float(balances[-1])
+        tax = max(0.0, final_gross_value - total_contributions_net) * holding_tax
+        final_net_value = final_gross_value - tax
+        cagr_net = (
+            (max(final_net_value, 0.0) / total_contributions_gross) ** (1.0 / years) - 1.0
+            if total_contributions_gross > 0 and years > 0
+            else 0.0
+        )
+
+        scenarios.append(
+            MonteCarloCrisisScenario(
+                label=label,
+                start_year=start_year,
+                status="available",
+                start_date=dates[start_index],
+                months_available=months_available,
+                final_net_value=final_net_value,
+                cagr_net=float(cagr_net),
+                max_drawdown=_max_drawdown_for_path(balances),
+                line=[
+                    MonteCarloCrisisPoint(month=month + 1, value=float(value))
+                    for month, value in enumerate(balances)
+                ],
+            )
+        )
+
+    return scenarios
+
+
+def simulate_investitie_monte_carlo(inp: MonteCarloInput) -> MonteCarloResult:
+    """Historical block-bootstrap Monte Carlo for the ETF cash-flow model.
+
+    `monthly_returns` are decimal monthly returns, e.g. 0.0235 for +2.35%.
+    Monthly account paths are gross account values before final exit tax.
+    Final distribution is net of holding tax, matching `simulate_investitie`.
+    """
+    sampled_returns = _bootstrap_monthly_returns(inp)
+
+    ter_monthly = _to_float(inp.ter) / 12.0
+    effective_returns: NDArray[np.float64] = (sampled_returns - ter_monthly).astype(np.float64)
+
+    (
+        contribution_net,
+        _broker_fees,
+        total_contributions_gross,
+        total_contributions_net,
+        total_broker_fees,
+    ) = _cashflow_arrays(inp)
+    balances = _simulate_balance_paths(effective_returns, contribution_net)
+
     final_gross_values = balances[:, -1]
-    total_contributions_gross = float(np.sum(contribution_gross))
-    total_contributions_net = float(np.sum(contribution_net))
-    total_broker_fees = float(np.sum(broker_fees))
     holding_tax = _to_float(inp.holding_tax)
     taxes = np.maximum(0.0, final_gross_values - total_contributions_net) * holding_tax
     final_net_values = final_gross_values - taxes
@@ -352,4 +509,10 @@ def simulate_investitie_monte_carlo(inp: MonteCarloInput) -> MonteCarloResult:
         total_contributions_gross=total_contributions_gross,
         total_contributions_net=total_contributions_net,
         total_broker_fees=total_broker_fees,
+        crisis_scenarios=_crisis_scenarios(
+            inp,
+            contribution_net,
+            total_contributions_gross,
+            total_contributions_net,
+        ),
     )

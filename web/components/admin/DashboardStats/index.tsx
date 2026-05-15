@@ -33,6 +33,8 @@
  *                        rest of the dashboard working.
  */
 
+import config from "@payload-config";
+import { getPayload } from "payload";
 import { fetchAdminStats, type AdminStats } from "../../../lib/posthog-server";
 
 import "./styles.scss";
@@ -228,6 +230,47 @@ function ToolBreakdown({ byTool }: { byTool: AdminStats["byTool"] }) {
   );
 }
 
+async function fetchSavedSimulationStats() {
+  try {
+    const payload = await getPayload({ config });
+    const [total, exported, latest] = await Promise.all([
+      payload.find({
+        collection: "simulari",
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: "simulari",
+        where: { pdfHash: { exists: true } },
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: "simulari",
+        sort: "-createdAt",
+        depth: 0,
+        limit: 5,
+        overrideAccess: true,
+      }),
+    ]);
+
+    return {
+      total: total.totalDocs,
+      exported: exported.totalDocs,
+      latest: latest.docs.map((doc) => ({
+        id: doc.id,
+        tool: String(doc.tool),
+        clientAlias: String(doc.clientAlias ?? "Client demo"),
+        createdAt: String(doc.createdAt ?? ""),
+      })),
+    };
+  } catch {
+    return { total: 0, exported: 0, latest: [] };
+  }
+}
+
 /**
  * Main widget export — registered in payload.config.ts via
  * `admin.components.beforeDashboard`.
@@ -236,7 +279,10 @@ function ToolBreakdown({ byTool }: { byTool: AdminStats["byTool"] }) {
  * needed from Payload — we grab everything from env + PostHog directly.
  */
 export default async function DashboardStats() {
-  const stats = await fetchAdminStats();
+  const [stats, savedStats] = await Promise.all([
+    fetchAdminStats(),
+    fetchSavedSimulationStats(),
+  ]);
 
   return (
     <div className="dashboard-stats">
@@ -277,6 +323,27 @@ export default async function DashboardStats() {
         <div className="ds-spark-wrap">
           <div className="ds-spark-wrap__label">Ultimele 14 zile</div>
           <Sparkline data={stats.sparkline} />
+        </div>
+      </div>
+
+      <div className="ds-saved">
+        <div className="ds-saved__summary">
+          <StatTile label="Simulări salvate" value={savedStats.total} />
+          <StatTile label="PDF-uri exportate" value={savedStats.exported} />
+        </div>
+        <div className="ds-saved__latest">
+          <div className="ds-saved__title">Ultimele simulări salvate</div>
+          {savedStats.latest.length === 0 ? (
+            <div className="ds-saved__empty">Nu există încă simulări salvate.</div>
+          ) : (
+            savedStats.latest.map((item) => (
+              <div key={item.id} className="ds-saved__item">
+                <span>{item.clientAlias}</span>
+                <strong>{item.tool}</strong>
+                <time>{new Date(item.createdAt).toLocaleString("ro-RO")}</time>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

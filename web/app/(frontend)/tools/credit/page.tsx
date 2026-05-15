@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
 import { captureSimulation } from "@/lib/posthog";
+import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import { Disclaimer } from "@/components/Disclaimer";
 import {
   CurrencyToggle,
@@ -84,6 +85,9 @@ export default function CreditSimulator() {
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProdusCredit[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
+  const [lastProductSnapshots, setLastProductSnapshots] =
+    useState<unknown>(undefined);
   const [currency, setCurrency] = useState<CurrencyState>({
     display: "EUR",
     rateEurRon: 0,
@@ -127,32 +131,50 @@ export default function CreditSimulator() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
+  const selectedProduct = products.find((x) => x.id === selectedProductId);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setLastInputSnapshot(null);
+    setLastProductSnapshots(undefined);
     try {
+      const requestPayload = {
+        principal: form.principal,
+        months: form.months,
+        annual_rate_initial: form.annual_rate_initial / 100,
+        annual_rate_after:
+          form.revision_month > 0 && form.annual_rate_after > 0
+            ? form.annual_rate_after / 100
+            : null,
+        revision_month: form.revision_month > 0 ? form.revision_month : null,
+        monthly_fee: form.monthly_fee,
+        grace_months: form.grace_months,
+        monthly_prepayment: form.monthly_prepayment,
+        prepayment_mode: form.prepayment_mode,
+      };
       const res = await fetch(`${BACKEND_URL}/api/v1/credit/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          principal: form.principal,
-          months: form.months,
-          annual_rate_initial: form.annual_rate_initial / 100,
-          annual_rate_after:
-            form.revision_month > 0 && form.annual_rate_after > 0
-              ? form.annual_rate_after / 100
-              : null,
-          revision_month: form.revision_month > 0 ? form.revision_month : null,
-          monthly_fee: form.monthly_fee,
-          grace_months: form.grace_months,
-          monthly_prepayment: form.monthly_prepayment,
-          prepayment_mode: form.prepayment_mode,
-        }),
+        body: JSON.stringify(requestPayload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      const response = (await res.json()) as CreditResponse;
+      const productSnapshots = selectedProduct
+        ? { creditProduct: selectedProduct }
+        : undefined;
+      setResult(response);
+      setLastProductSnapshots(productSnapshots);
+      setLastInputSnapshot({
+        form,
+        requestPayload,
+        selectedProductId,
+        productSnapshots,
+        currency,
+        inflation,
+      });
       captureSimulation("credit");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -283,6 +305,16 @@ export default function CreditSimulator() {
                 <CurrencyToggle value={currency} onChange={setCurrency} />
                 <InflationToggle value={inflation} onChange={setInflation} />
               </div>
+
+              {lastInputSnapshot !== null && (
+                <SaveSimulationPanel
+                  tool="credit"
+                  inputSnapshot={lastInputSnapshot}
+                  outputSummary={result}
+                  productSnapshots={lastProductSnapshots}
+                  pdfEnabled
+                />
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Stat

@@ -9,6 +9,7 @@ import {
 } from "@/lib/cms";
 import indexReturnMetadata from "@/data/index-returns/metadata.json";
 import { captureSimulation } from "@/lib/posthog";
+import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   Area,
   AreaChart,
@@ -100,6 +101,17 @@ type MonteCarloResponse = {
   total_contributions_gross: number;
   total_contributions_net: number;
   total_broker_fees: number;
+  crisis_scenarios: {
+    label: string;
+    start_year: number;
+    status: "available" | "insufficient_history" | "insufficient_horizon";
+    start_date: string | null;
+    months_available: number;
+    final_net_value: number | null;
+    cagr_net: number | null;
+    max_drawdown: number | null;
+    line: { month: number; value: number }[];
+  }[];
 };
 
 const BACKEND_URL =
@@ -125,6 +137,8 @@ const INDEX_LABELS: Record<RandamentIndice["indice"], string> = {
   BET: "BET",
   OTHER: "Alt indice",
 };
+
+const CRISIS_COLORS = ["#7f1d1d", "#9a3412", "#854d0e", "#1d4ed8", "#6d28d9", "#be185d"];
 
 type IndexReturnDataset = (typeof indexReturnMetadata.datasets)[number];
 
@@ -171,6 +185,9 @@ export default function InvestitiiETF() {
   const [funds, setFunds] = useState<FondETF[]>([]);
   const [indexReturns, setIndexReturns] = useState<RandamentIndice[]>([]);
   const [selectedFundId, setSelectedFundId] = useState("");
+  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
+  const [lastProductSnapshots, setLastProductSnapshots] =
+    useState<unknown>(undefined);
   const [selectedIndex, setSelectedIndex] =
     useState<RandamentIndice["indice"]>("SP500");
   const [inflation, setInflation] = useState<InflationState>({
@@ -201,6 +218,9 @@ export default function InvestitiiETF() {
   const historicalMonthlyReturns = selectedIndexReturns.map(
     (row) => row.randamentLunar / 100,
   );
+  const historicalMonthlyReturnDates = selectedIndexReturns.map((row) =>
+    row.data.slice(0, 10),
+  );
   const selectedDatasetMetadata = metadataForIndice(
     selectedIndex,
     selectedIndexReturns,
@@ -225,6 +245,7 @@ export default function InvestitiiETF() {
     historicalMonthlyReturns.length > 0
       ? historicalMonthlyReturns
       : DEMO_MONTHLY_RETURNS;
+  const selectedFund = funds.find((x) => x.id === selectedFundId);
 
   const applyFund = (id: string) => {
     setSelectedFundId(id);
@@ -259,6 +280,8 @@ export default function InvestitiiETF() {
     setError(null);
     setResult(null);
     setMcResult(null);
+    setLastInputSnapshot(null);
+    setLastProductSnapshots(undefined);
     try {
       const endpoint =
         mode === "deterministic"
@@ -281,6 +304,10 @@ export default function InvestitiiETF() {
               months: form.months,
               monthly_contribution: form.monthly_contribution,
               monthly_returns: monthlyReturnsForMonteCarlo,
+              monthly_return_dates:
+                historicalMonthlyReturns.length > 0
+                  ? historicalMonthlyReturnDates
+                  : null,
               ter: form.ter / 100,
               broker_fee_pct: form.broker_fee_pct / 100,
               broker_fee_fixed: form.broker_fee_fixed,
@@ -296,11 +323,26 @@ export default function InvestitiiETF() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      const response = await res.json();
       if (mode === "deterministic") {
-        setResult(await res.json());
+        setResult(response);
       } else {
-        setMcResult(await res.json());
+        setMcResult(response);
       }
+      const productSnapshots = selectedFund ? { fondETF: selectedFund } : undefined;
+      setLastProductSnapshots(productSnapshots);
+      setLastInputSnapshot({
+        mode,
+        form,
+        mcForm,
+        selectedFundId,
+        selectedIndex,
+        selectedDatasetMetadata,
+        productSnapshots,
+        requestPayload: payload,
+        currency,
+        inflation,
+      });
       captureSimulation("investitii");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -487,12 +529,44 @@ export default function InvestitiiETF() {
           inflation.mode === "real" && inflation.rate > 0
             ? (v: number) => deflate(v, inflation.rate, years)
             : (v: number) => v;
+        const crisisScenarios = mcResult.crisis_scenarios ?? [];
+        const availableCrisisScenarios = crisisScenarios.filter(
+          (scenario) => scenario.status === "available",
+        );
+        const crisisChartData = mcResult.percentiles.map((r) => {
+          const point: Record<string, number> = {
+            month: r.month,
+            p10: conv(realFactor(r.p10)),
+            p25: conv(realFactor(r.p25)),
+            p50: conv(realFactor(r.p50)),
+            p75: conv(realFactor(r.p75)),
+            p90: conv(realFactor(r.p90)),
+          };
+          availableCrisisScenarios.forEach((scenario) => {
+            const scenarioPoint = scenario.line.find((item) => item.month === r.month);
+            if (scenarioPoint) {
+              point[`crisis_${scenario.start_year}`] = conv(
+                realFactor(scenarioPoint.value),
+              );
+            }
+          });
+          return point;
+        });
         return (
           <section className="space-y-6 reveal reveal-fade">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InflationToggle value={inflation} onChange={setInflation} />
               <CurrencyToggle value={currency} onChange={setCurrency} />
             </div>
+
+            {lastInputSnapshot !== null && (
+              <SaveSimulationPanel
+                tool="investitii"
+                inputSnapshot={lastInputSnapshot}
+                outputSummary={mcResult}
+                productSnapshots={lastProductSnapshots}
+              />
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat
@@ -552,14 +626,7 @@ export default function InvestitiiETF() {
             <ChartCard title="Fan chart Monte Carlo P10 / P25 / P50 / P75 / P90">
               <ResponsiveContainer width="100%" height={320}>
                 <AreaChart
-                  data={mcResult.percentiles.map((r) => ({
-                    month: r.month,
-                    p10: conv(realFactor(r.p10)),
-                    p25: conv(realFactor(r.p25)),
-                    p50: conv(realFactor(r.p50)),
-                    p75: conv(realFactor(r.p75)),
-                    p90: conv(realFactor(r.p90)),
-                  }))}
+                  data={crisisChartData}
                   margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e0" />
@@ -626,9 +693,64 @@ export default function InvestitiiETF() {
                     strokeDasharray="4 4"
                     dot={false}
                   />
+                  {availableCrisisScenarios.map((scenario, index) => (
+                    <Line
+                      key={scenario.start_year}
+                      type="monotone"
+                      dataKey={`crisis_${scenario.start_year}`}
+                      name={`${scenario.start_year}`}
+                      stroke={CRISIS_COLORS[index % CRISIS_COLORS.length]}
+                      strokeWidth={1.6}
+                      strokeDasharray="6 3"
+                      dot={false}
+                    />
+                  ))}
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
+
+            <TableCard>
+              <thead>
+                <tr>
+                  <Th>Scenariu istoric</Th>
+                  <Th>Status</Th>
+                  <Th>Start</Th>
+                  <Th>Valoare finală</Th>
+                  <Th>CAGR net</Th>
+                  <Th>Drawdown max</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {crisisScenarios.map((scenario) => (
+                  <tr key={scenario.start_year} className="border-t border-[var(--border)]">
+                    <Td>{scenario.label}</Td>
+                    <Td>
+                      {scenario.status === "available"
+                        ? "disponibil"
+                        : scenario.status === "insufficient_horizon"
+                          ? `istoric prea scurt (${scenario.months_available} luni)`
+                          : "fără istoric suficient"}
+                    </Td>
+                    <Td>{scenario.start_date ?? "—"}</Td>
+                    <Td>
+                      {scenario.final_net_value === null
+                        ? "—"
+                        : `${fmt(conv(realFactor(scenario.final_net_value)))} ${sym}`}
+                    </Td>
+                    <Td>
+                      {scenario.cagr_net === null
+                        ? "—"
+                        : `${fmt(scenario.cagr_net * 100, 2)}%`}
+                    </Td>
+                    <Td>
+                      {scenario.max_drawdown === null
+                        ? "—"
+                        : `${fmt(scenario.max_drawdown * 100, 1)}%`}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableCard>
 
             <Disclaimer modul="etf" />
             <DisclaimerNote>
@@ -661,6 +783,15 @@ export default function InvestitiiETF() {
               <InflationToggle value={inflation} onChange={setInflation} />
               <CurrencyToggle value={currency} onChange={setCurrency} />
             </div>
+
+            {lastInputSnapshot !== null && (
+              <SaveSimulationPanel
+                tool="investitii"
+                inputSnapshot={lastInputSnapshot}
+                outputSummary={result}
+                productSnapshots={lastProductSnapshots}
+              />
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat

@@ -21,6 +21,19 @@ RETURNS = [
 ]
 
 
+def _monthly_dates(start_year: int, start_month: int, count: int) -> list[str]:
+    dates: list[str] = []
+    year = start_year
+    month = start_month
+    for _ in range(count):
+        dates.append(f"{year:04d}-{month:02d}")
+        month += 1
+        if month == 13:
+            month = 1
+            year += 1
+    return dates
+
+
 def _base_input(seed: int | None = 42) -> MonteCarloInput:
     return MonteCarloInput(
         principal=Decimal("10000"),
@@ -126,3 +139,68 @@ def test_short_history_clamps_block_size() -> None:
 
     result = simulate_investitie_monte_carlo(inp)
     assert result.block_size == 3
+
+
+def test_crisis_scenarios_return_available_lines_when_history_allows() -> None:
+    returns = (RETURNS * 20)[:180]
+    inp = MonteCarloInput(
+        principal=Decimal("1000"),
+        months=24,
+        monthly_contribution=Decimal("100"),
+        monthly_returns=returns,
+        monthly_return_dates=_monthly_dates(1928, 1, len(returns)),
+        iterations=50,
+        block_size=6,
+        seed=1,
+    )
+
+    result = simulate_investitie_monte_carlo(inp)
+    scenario_1929 = next(item for item in result.crisis_scenarios if item.start_year == 1929)
+
+    assert scenario_1929.status == "available"
+    assert scenario_1929.start_date == "1929-01"
+    assert scenario_1929.final_net_value is not None
+    assert scenario_1929.cagr_net is not None
+    assert scenario_1929.max_drawdown is not None
+    assert len(scenario_1929.line) == 24
+
+
+def test_crisis_scenarios_report_missing_dates() -> None:
+    inp = MonteCarloInput(
+        principal=Decimal("1000"),
+        months=12,
+        monthly_returns=RETURNS,
+        iterations=50,
+        block_size=6,
+        seed=1,
+    )
+
+    result = simulate_investitie_monte_carlo(inp)
+
+    assert {item.status for item in result.crisis_scenarios} == {"insufficient_history"}
+
+
+def test_crisis_scenarios_report_insufficient_horizon() -> None:
+    returns = (RETURNS * 3)[:30]
+    inp = MonteCarloInput(
+        principal=Decimal("1000"),
+        months=24,
+        monthly_returns=returns,
+        monthly_return_dates=_monthly_dates(2022, 1, len(returns)),
+        iterations=50,
+        block_size=6,
+        seed=1,
+    )
+
+    result = simulate_investitie_monte_carlo(inp)
+    scenario_2022 = next(item for item in result.crisis_scenarios if item.start_year == 2022)
+    assert scenario_2022.status == "available"
+
+    inp_longer_than_history = replace(inp, months=36)
+    result_longer = simulate_investitie_monte_carlo(inp_longer_than_history)
+    scenario_2022_longer = next(
+        item for item in result_longer.crisis_scenarios if item.start_year == 2022
+    )
+
+    assert scenario_2022_longer.status == "insufficient_horizon"
+    assert scenario_2022_longer.months_available == 30

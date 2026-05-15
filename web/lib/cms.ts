@@ -144,7 +144,7 @@ export const fetchProduseUL = () => fetchCollection<ProdusUL>("produse-ul");
 
 export const fetchIndiciIstorici = async (limit = 10000) => {
   try {
-    const res = await fetch(`/api/indici-istorici?limit=${limit}&depth=0`, {
+    const res = await fetch(`/api/index-returns?limit=${limit}`, {
       cache: "no-store",
     });
     if (!res.ok) return [];

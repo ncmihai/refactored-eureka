@@ -141,9 +141,14 @@ export function Navbar() {
           </div>
         </nav>
 
-        <Link href="/admin" className="btn-ghost text-sm">
-          Admin
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/simulari" className="btn-ghost text-sm">
+            Simulări
+          </Link>
+          <Link href="/admin" className="btn-ghost text-sm">
+            Admin
+          </Link>
+        </div>
       </div>
     </header>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { fetchProduseUL, type ProdusUL } from "@/lib/cms";
 import { captureSimulation } from "@/lib/posthog";
+import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   Area,
   AreaChart,
@@ -88,10 +89,13 @@ export default function UnitLinkedPage() {
     holding_tax: 10,
   });
   const [result, setResult] = useState<UnitLinkedResponse | null>(null);
+  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProdusUL[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [lastProductSnapshots, setLastProductSnapshots] =
+    useState<unknown>(undefined);
   const [currency, setCurrency] = useState<CurrencyState>({
     display: "RON",
     rateEurRon: 0,
@@ -128,33 +132,50 @@ export default function UnitLinkedPage() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
+  const selectedProduct = products.find((x) => x.id === selectedProductId);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setLastInputSnapshot(null);
+    setLastProductSnapshots(undefined);
     try {
+      const requestPayload = {
+        initial_contribution: form.initial_contribution,
+        monthly_premium: form.monthly_premium,
+        months: form.months,
+        annual_return: form.annual_return / 100,
+        allocation_fee_low_pct: form.allocation_fee_low_pct / 100,
+        allocation_fee_high_pct: form.allocation_fee_high_pct / 100,
+        allocation_threshold: form.allocation_threshold,
+        fixed_insurance_fee: form.fixed_insurance_fee,
+        initial_units_months: form.initial_units_months,
+        initial_expense_recovery_annual_pct:
+          form.initial_expense_recovery_annual_pct / 100,
+        admin_fee_annual_pct: form.admin_fee_annual_pct / 100,
+        holding_tax: form.holding_tax / 100,
+      };
       const res = await fetch(`${BACKEND_URL}/api/v1/unit-linked/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          initial_contribution: form.initial_contribution,
-          monthly_premium: form.monthly_premium,
-          months: form.months,
-          annual_return: form.annual_return / 100,
-          allocation_fee_low_pct: form.allocation_fee_low_pct / 100,
-          allocation_fee_high_pct: form.allocation_fee_high_pct / 100,
-          allocation_threshold: form.allocation_threshold,
-          fixed_insurance_fee: form.fixed_insurance_fee,
-          initial_units_months: form.initial_units_months,
-          initial_expense_recovery_annual_pct:
-            form.initial_expense_recovery_annual_pct / 100,
-          admin_fee_annual_pct: form.admin_fee_annual_pct / 100,
-          holding_tax: form.holding_tax / 100,
-        }),
+        body: JSON.stringify(requestPayload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      const response = (await res.json()) as UnitLinkedResponse;
+      const productSnapshots = selectedProduct
+        ? { produsUnitLinked: selectedProduct }
+        : undefined;
+      setResult(response);
+      setLastProductSnapshots(productSnapshots);
+      setLastInputSnapshot({
+        form,
+        selectedProductId,
+        productSnapshots,
+        requestPayload,
+        currency,
+      });
       captureSimulation("unit_linked");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută");
@@ -282,6 +303,15 @@ export default function UnitLinkedPage() {
         return (
           <section className="space-y-6 reveal reveal-fade">
             <CurrencyToggle value={currency} onChange={setCurrency} />
+
+            {lastInputSnapshot !== null && (
+              <SaveSimulationPanel
+                tool="unit_linked"
+                inputSnapshot={lastInputSnapshot}
+                outputSummary={result}
+                productSnapshots={lastProductSnapshots}
+              />
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Stat

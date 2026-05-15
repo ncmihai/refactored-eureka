@@ -106,7 +106,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Navbar dropdown Tools (scalabil — click-outside + Escape + route-change auto-close)
 
 ### QA MVP
-- [/] `pytest` — suite paritate cu Excel. Curent: **86 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 ETF deterministic + 9 Monte Carlo + 5 UL + 2 comparator). Target inițial ≥20/modul încă nu atins pe credit/depozit.
+- [/] `pytest` — suite paritate cu Excel. Curent: **89 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 ETF deterministic + 12 Monte Carlo + 5 UL + 2 comparator). Target inițial ≥20/modul încă nu atins pe credit/depozit.
 - [ ] Property-based tests (Hypothesis) pentru invarianți credit
 - [ ] Playwright E2E — flow „consultant deschide sesiune → credit → PDF”
 
@@ -141,14 +141,14 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Import provizoriu `STOXX_600` via proxy ETF EXSA.DE — 219 randamente lunare adjusted-close, 2008-02 → 2026-04, batch `yahoo-exsa-stoxx600-proxy-2008-2026`
 - [x] Import provizoriu `FTSE_ALL_WORLD` via proxy ETF VWCE.DE — 81 randamente lunare adjusted-close, 2019-08 → 2026-04, batch `yahoo-vwce-ftse-all-world-proxy-2019-2026`
 - [ ] Integrare `yfinance` doar ca sursă auxiliară pentru ticker metadata/TER unde e stabil; randamentele istorice rămân în DB pentru reproducibilitate
-- [ ] Cache Redis pentru seriile istorice (`index_returns:{symbol}` TTL 24h) + endpoint diagnostic pentru freshness
+- [x] Cache/facade pentru seriile istorice — `/api/index-returns` cu TTL 24h, diagnostic count/range/batch și cheie logică `index_returns:{indice}:{batchOrChecksum}`
 - [/] Politică surse date: metadata locală introdusă; MSCI World / STOXX 600 / FTSE All-World au proxy-uri provizorii pentru demo intern, PDF/export comercial rămâne blocat până la review licențe
 
 ### Faza 2B — ETF Monte Carlo
 - [x] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
 - [x] Endpoint `POST /api/v1/investitii/monte-carlo` — reutilizează cash-flow-ul ETF deterministic + `monthly_returns`, `iterations`, `block_size`
 - [x] Output percentiles lunar: P10/P25/P50/P75/P90 + final distribution + probability of loss + probability target reached
-- [ ] Scenarii worst-start deterministic: 1929, 1999, 2000, 2008 unde seria permite; fallback explicat dacă indicele nu are istoric suficient
+- [x] Scenarii worst-start deterministic: 1929, 1973, 2000, 2008, 2020, 2022 unde seria permite; fallback explicat dacă indicele nu are istoric suficient
 - [/] Metrici investiții: CAGR median/net, volatilitate anualizată, Sharpe simplificat, max drawdown median; Regula 72 rămâne pentru comparator/UI
 - [x] Teste unitare: shape output, seed determinism, percentile monotonicity, target probability, fee/contribution invariants
 - [x] Benchmark local: 10k × 30 ani în ~223ms pentru motor pur
@@ -174,14 +174,15 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Capture analytics `captureSimulation("comparator")` + breakdown separat în admin dashboard PostHog
 
 ### Faza 2E — Sesiuni, PDF & pitch readiness
-- [ ] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt
-- [ ] Salvare sesiune cu ID unic + link shareable; public view read-only fără PII
-- [ ] Snapshot complet parametri produse pe simulare (nu FK live) pentru reproducibilitate legală/comercială
-- [ ] Export PDF v1 pentru Credit + Optimizare; include logo firmă, disclaimer, timestamp, hash input/output
+- [x] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt
+- [x] Salvare sesiune cu ID unic + link shareable; public view read-only fără PII; buton „Salvează simularea” pe toate uneltele
+- [x] Snapshot complet parametri produse pe simulare (nu FK live) pentru reproducibilitate legală/comercială
+- [x] Export PDF v1 pentru Credit + Optimizare; include firmă/consultant, brand color, disclaimer, timestamp, hash input/output
 - [ ] Export PDF v2 pentru ETF/UL/Comparator cu fan chart și surse date
-- [ ] Admin dashboard: ultimele simulări, top tools, exporturi PDF, conversie guest → consultant demo
+- [x] Admin dashboard: ultimele simulări + count exporturi PDF
 - [ ] Script demo data pentru pitch: firmă demo, consultant demo, produse demo, 3 simulări saved links
-- [ ] Playwright E2E beta: guest rulează ETF MC → salvează sesiune → export PDF → link shareable deschis read-only
+- [/] Browser smoke beta: Invest MC afișează scenarii istorice, guest save e blocat 401, Comparator afișează save panel, share route are 404 read-only pentru ID invalid
+- [ ] Playwright E2E beta autentificat: consultant rulează ETF MC → salvează sesiune → link shareable deschis read-only; Credit/Optimizare → export PDF
 - [ ] Pregătire demo OVB/Safety: 3 scenarii reale, 1 pagină pitch, listă întrebări frecvente consultanți
 
 ---

@@ -15,6 +15,7 @@ import { IndiciIstorici } from './collections/IndiciIstorici'
 import { Media } from './collections/Media'
 import { ProduseCredit } from './collections/ProduseCredit'
 import { ProduseUL } from './collections/ProduseUL'
+import { Simulari } from './collections/Simulari'
 import { Users } from './collections/Users'
 
 const filename = fileURLToPath(import.meta.url)
@@ -64,6 +65,7 @@ export default buildConfig({
     DobanziDepozit,
     FonduriETF,
     IndiciIstorici,
+    Simulari,
     CursuriValutare,
     Inflatii,
     Disclaimere,
