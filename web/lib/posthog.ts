@@ -13,8 +13,8 @@
  * --------------------------
  * - `$pageview`         — which pages consultants land on. Fired manually on
  *                         route change (autocapture + capture_pageview are off).
- * - `tool_simulation_ran` — a consultant ran the math for one of the 4 tools.
- *                           Property: `tool` ∈ {credit, depozit, investitii, optimizare}.
+ * - `tool_simulation_ran` — a consultant ran the math for one of the tools.
+ *                           Property: `tool` is a route-aligned slug.
  *                           NO input values are sent — only the fact it happened.
  * - `tool_pdf_exported`   — reserved for PDF v1 (not yet wired).
  *
@@ -113,7 +113,13 @@ export function capturePageView(url: string): void {
 }
 
 /** Tool slugs as they appear in URL + CMS. Keep these aligned with routes. */
-export type ToolSlug = "credit" | "optimizare" | "depozit" | "investitii";
+export type ToolSlug =
+  | "credit"
+  | "optimizare"
+  | "depozit"
+  | "investitii"
+  | "unit_linked"
+  | "comparator";
 
 /**
  * Record that a user successfully ran a simulation. Called from each tool

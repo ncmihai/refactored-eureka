@@ -58,6 +58,8 @@ export type AdminStats = {
     optimizare: number;
     depozit: number;
     investitii: number;
+    unit_linked: number;
+    comparator: number;
   };
   /** Unique distinct_ids seen in the last 24h (pageviews + events). */
   uniqueToday: number;
@@ -96,6 +98,8 @@ const KPI_QUERY = `
     countIf(event = 'tool_simulation_ran' AND properties.tool = 'optimizare') AS sims_optimizare,
     countIf(event = 'tool_simulation_ran' AND properties.tool = 'depozit') AS sims_depozit,
     countIf(event = 'tool_simulation_ran' AND properties.tool = 'investitii') AS sims_investitii,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'unit_linked') AS sims_unit_linked,
+    countIf(event = 'tool_simulation_ran' AND properties.tool = 'comparator') AS sims_comparator,
     uniqIf(distinct_id, timestamp > now() - INTERVAL 1 DAY) AS unique_today,
     uniq(distinct_id) AS unique_week,
     countIf(event = '$pageview') AS pageviews_week
@@ -240,7 +244,14 @@ async function fetchAdminStatsUncached(): Promise<AdminStats> {
     status: "ok",
     simsToday: 0,
     simsWeek: 0,
-    byTool: { credit: 0, optimizare: 0, depozit: 0, investitii: 0 },
+    byTool: {
+      credit: 0,
+      optimizare: 0,
+      depozit: 0,
+      investitii: 0,
+      unit_linked: 0,
+      comparator: 0,
+    },
     uniqueToday: 0,
     uniqueWeek: 0,
     pageviewsWeek: 0,
@@ -265,6 +276,8 @@ async function fetchAdminStatsUncached(): Promise<AdminStats> {
         sims_optimizare: number;
         sims_depozit: number;
         sims_investitii: number;
+        sims_unit_linked: number;
+        sims_comparator: number;
         unique_today: number;
         unique_week: number;
         pageviews_week: number;
@@ -289,6 +302,8 @@ async function fetchAdminStatsUncached(): Promise<AdminStats> {
         optimizare: Number(kpi.sims_optimizare) || 0,
         depozit: Number(kpi.sims_depozit) || 0,
         investitii: Number(kpi.sims_investitii) || 0,
+        unit_linked: Number(kpi.sims_unit_linked) || 0,
+        comparator: Number(kpi.sims_comparator) || 0,
       },
       uniqueToday: Number(kpi.unique_today) || 0,
       uniqueWeek: Number(kpi.unique_week) || 0,

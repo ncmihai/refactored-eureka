@@ -1,0 +1,59 @@
+{
+  "datasets": [
+    {
+      "id": "sp500-shiller-monthly-total-return",
+      "indice": "SP500",
+      "label": "S&P Composite / S&P 500 long-history proxy",
+      "file": "sp500-shiller-monthly-total-return.csv",
+      "currency": "USD",
+      "returnType": "monthly_total_return_proxy",
+      "coverage": {
+        "from": "1871-02",
+        "through": "2026-04",
+        "months": 1863
+      },
+      "sourceName": "Robert J. Shiller, Irrational Exuberance online data",
+      "sourcePage": "https://shillerdata.com/",
+      "sourceDownload": "https://img1.wsimg.com/blobby/go/e5e77e0b-59d1-44d9-ab25-4763ac982e53/downloads/441f0d2c-37e4-4803-b4e2-8fe10407fbf6/ie_data.xls?ver=1778098504874",
+      "importBatch": "shiller-sp500-monthly-total-return-1871-2026",
+      "notes": "Uses the Data sheet Total Return Price column. Pre-1957 observations are a long-history U.S. equity market proxy, not the literal modern S&P 500."
+    },
+    {
+      "id": "sp500-fred-monthly-price-return-2016-2026",
+      "indice": "SP500",
+      "label": "S&P 500 recent price-return check",
+      "file": "sp500-fred-monthly-price-return-2016-2026.csv",
+      "currency": "USD",
+      "returnType": "monthly_price_return",
+      "coverage": {
+        "from": "2016-06",
+        "through": "2026-04",
+        "months": 119
+      },
+      "sourceName": "FRED SP500 daily observations",
+      "sourcePage": "https://fred.stlouisfed.org/series/SP500",
+      "importBatch": "fred-sp500-monthly-2016-2026",
+      "notes": "Kept as an audit/source comparison file. FRED notes that the SP500 series contains 10 years of daily history and S&P reproduction restrictions."
+    }
+  ],
+  "plannedDatasets": [
+    {
+      "indice": "STOXX_600",
+      "label": "STOXX Europe 600",
+      "preferredReturnType": "monthly_total_return_or_net_return",
+      "status": "Needs licensing/source decision before repo import"
+    },
+    {
+      "indice": "MSCI_WORLD",
+      "label": "MSCI World",
+      "preferredReturnType": "monthly_net_total_return",
+      "status": "Needs licensing/source decision before repo import"
+    },
+    {
+      "indice": "FTSE_ALL_WORLD",
+      "label": "FTSE All-World",
+      "preferredReturnType": "monthly_total_return_or_etf_proxy",
+      "status": "Candidate global proxy if MSCI licensing is too restrictive"
+    }
+  ]
+}

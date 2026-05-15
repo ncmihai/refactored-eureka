@@ -134,9 +134,12 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Seed `Fonduri_ETF` cu 8 ETF-uri uzuale pentru consultanță RO/EU (S&P 500, MSCI World, FTSE All-World, STOXX Europe, BET exposure demonstrativ)
 - [x] Colecție CMS `Indici_Istorici` — indice, monedă, dată lunară, randament lunar, sursă, upload CSV, checksum import
 - [x] Script import CSV randamente lunare pentru S&P 500, MSCI World, STOXX 600, BET; validare duplicate + opțiune `--update`
+- [x] Structură repo-locală pentru dataseturi istorice — `web/data/index-returns/` cu README + metadata pentru surse, acoperire, tip randament și batch import
+- [x] Import complet `SP500` long-history proxy în `Indici_Istorici` — 1.863 randamente lunare din Robert Shiller / Irrational Exuberance, 1871-02 → 2026-04, batch `shiller-sp500-monthly-total-return-1871-2026`
+- [x] Păstrare FRED `SP500` recent ca fișier audit/comparație — 119 randamente lunare price-return, 2016-06 → 2026-04, batch `fred-sp500-monthly-2016-2026`
 - [ ] Integrare `yfinance` doar ca sursă auxiliară pentru ticker metadata/TER unde e stabil; randamentele istorice rămân în DB pentru reproducibilitate
 - [ ] Cache Redis pentru seriile istorice (`index_returns:{symbol}` TTL 24h) + endpoint diagnostic pentru freshness
-- [ ] Politică surse date: ce poate fi public, ce trebuie citat, ce date nu includem până avem licență clară
+- [/] Politică surse date: metadata locală introdusă; MSCI World / STOXX 600 rămân blocate până alegem surse/licențe potrivite
 
 ### Faza 2B — ETF Monte Carlo
 - [x] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
@@ -146,7 +149,8 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [/] Metrici investiții: CAGR median/net, volatilitate anualizată, Sharpe simplificat, max drawdown median; Regula 72 rămâne pentru comparator/UI
 - [x] Teste unitare: shape output, seed determinism, percentile monotonicity, target probability, fee/contribution invariants
 - [x] Benchmark local: 10k × 30 ani în ~223ms pentru motor pur
-- [/] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, final distribution și copy explicativ; folosește încă serie demonstrativă până conectăm `Indici_Istorici`
+- [x] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, final distribution și copy explicativ; citește `Indici_Istorici` din CMS și folosește serie demo doar ca fallback pentru indici neimportați
+- [x] UI ETF afișează contextul datasetului Monte Carlo: număr randamente, interval, monedă, sursă și tip randament
 
 ### Faza 2C — Unit-Linked stand-alone
 - [x] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
@@ -155,7 +159,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Endpoint `POST /api/v1/unit-linked/simulate`
 - [x] UI `tools/unit-linked` — formular, produs CMS dropdown, grafic sold vs contribuții, defalcare taxe, disclaimer MiFID/insurance
 - [x] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length
-- [/] Capture analytics — folosește temporar bucket `investitii`; adăugăm slug separat `unit_linked` în PostHog wrapper când extindem dashboard-ul
+- [x] Capture analytics `captureSimulation("unit_linked")` + breakdown separat în admin dashboard PostHog
 
 ### Faza 2D — Comparator investițional 3-way
 - [x] Definește contract comun de output pentru Depozit / ETF / UL: contribuții, valoare netă, taxe, CAGR, schedule
@@ -164,6 +168,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [/] Metrici comparative: TCO simplificat + CAGR net live; Sharpe/drawdown/probabilitate target vin după conectarea Monte Carlo în comparator
 - [x] Disclaimer explicit: comparație educațională, nu recomandare personalizată; produsul potrivit depinde de profil MiFID și obiective
 - [x] Teste backend comparator: aceeași contribuție brută pentru toate modulele, output pozitiv și lider valid
+- [x] Capture analytics `captureSimulation("comparator")` + breakdown separat în admin dashboard PostHog
 
 ### Faza 2E — Sesiuni, PDF & pitch readiness
 - [ ] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt

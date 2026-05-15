@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchFonduriETF, type FondETF } from "@/lib/cms";
+import {
+  fetchFonduriETF,
+  fetchIndiciIstorici,
+  type FondETF,
+  type RandamentIndice,
+} from "@/lib/cms";
+import indexReturnMetadata from "@/data/index-returns/metadata.json";
 import { captureSimulation } from "@/lib/posthog";
 import {
   Area,
@@ -111,6 +117,23 @@ const DEMO_MONTHLY_RETURNS = [
   -0.008, 0.018, 0.006, 0.023,
 ];
 
+const INDEX_LABELS: Record<RandamentIndice["indice"], string> = {
+  SP500: "S&P 500",
+  MSCI_WORLD: "MSCI World",
+  FTSE_ALL_WORLD: "FTSE All-World",
+  STOXX_600: "STOXX Europe 600",
+  BET: "BET",
+  OTHER: "Alt indice",
+};
+
+type IndexReturnDataset = (typeof indexReturnMetadata.datasets)[number];
+
+const monthLabel = (value: string) =>
+  new Intl.DateTimeFormat("ro-RO", {
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+
 export default function InvestitiiETF() {
   const [form, setForm] = useState({
     principal: 5000,
@@ -136,7 +159,10 @@ export default function InvestitiiETF() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [funds, setFunds] = useState<FondETF[]>([]);
+  const [indexReturns, setIndexReturns] = useState<RandamentIndice[]>([]);
   const [selectedFundId, setSelectedFundId] = useState("");
+  const [selectedIndex, setSelectedIndex] =
+    useState<RandamentIndice["indice"]>("SP500");
   const [inflation, setInflation] = useState<InflationState>({
     mode: "nominal",
     rate: 0,
@@ -151,7 +177,45 @@ export default function InvestitiiETF() {
 
   useEffect(() => {
     fetchFonduriETF().then(setFunds);
+    fetchIndiciIstorici().then(setIndexReturns);
   }, []);
+
+  const availableIndices = Array.from(
+    new Set(indexReturns.filter((row) => row.activ).map((row) => row.indice)),
+  ).sort();
+
+  const selectedIndexReturns = indexReturns
+    .filter((row) => row.activ && row.indice === selectedIndex)
+    .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
+  const historicalMonthlyReturns = selectedIndexReturns.map(
+    (row) => row.randamentLunar / 100,
+  );
+  const selectedDatasetMetadata = indexReturnMetadata.datasets.find(
+    (dataset): dataset is IndexReturnDataset =>
+      dataset.indice === selectedIndex &&
+      selectedIndexReturns.some((row) => row.importBatch === dataset.importBatch),
+  );
+  const selectedIndexStats =
+    selectedIndexReturns.length > 0
+      ? {
+          count: selectedIndexReturns.length,
+          from: selectedIndexReturns[0].data,
+          through: selectedIndexReturns[selectedIndexReturns.length - 1].data,
+          currency: selectedIndexReturns[0].moneda,
+          source:
+            selectedDatasetMetadata?.sourceName ??
+            selectedIndexReturns[0].sourceUrl ??
+            selectedIndexReturns[0].sursa,
+          returnType: selectedDatasetMetadata?.returnType ?? "monthly_return",
+          note: selectedDatasetMetadata?.notes,
+        }
+      : null;
+
+  const monthlyReturnsForMonteCarlo =
+    historicalMonthlyReturns.length > 0
+      ? historicalMonthlyReturns
+      : DEMO_MONTHLY_RETURNS;
 
   const applyFund = (id: string) => {
     setSelectedFundId(id);
@@ -162,6 +226,7 @@ export default function InvestitiiETF() {
       ...f,
       ter: fund.ter,
     }));
+    setSelectedIndex(fund.indiceReferinta);
     if (fund.moneda === "RON") {
       setCurrency((current) => ({ ...current, display: "RON" }));
     } else if (fund.moneda === "EUR") {
@@ -206,7 +271,7 @@ export default function InvestitiiETF() {
               principal: form.principal,
               months: form.months,
               monthly_contribution: form.monthly_contribution,
-              monthly_returns: DEMO_MONTHLY_RETURNS,
+              monthly_returns: monthlyReturnsForMonteCarlo,
               ter: form.ter / 100,
               broker_fee_pct: form.broker_fee_pct / 100,
               broker_fee_fixed: form.broker_fee_fixed,
@@ -322,6 +387,23 @@ export default function InvestitiiETF() {
         />
         {mode === "monte_carlo" && (
           <>
+            <Select
+              label="Indice istoric"
+              value={selectedIndex}
+              onChange={setSelectedIndex}
+              options={(
+                availableIndices.length > 0
+                  ? availableIndices
+                  : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600", "BET"] as const)
+              ).map((indice) => ({
+                value: indice,
+                label: `${INDEX_LABELS[indice]}${
+                  selectedIndex === indice && historicalMonthlyReturns.length === 0
+                    ? " · demo fallback"
+                    : ""
+                }`,
+              }))}
+            />
             <Field
               label="Iterații"
               value={mcForm.iterations}
@@ -344,6 +426,34 @@ export default function InvestitiiETF() {
               value={mcForm.seed}
               onChange={(v) => updateMc("seed", v)}
             />
+            <div className="md:col-span-3 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
+              {selectedIndexStats ? (
+                <p>
+                  Seria Monte Carlo folosește{" "}
+                  <strong className="text-[var(--ink)]">
+                    {selectedIndexStats.count.toLocaleString("ro-RO")} randamente
+                    lunare
+                  </strong>{" "}
+                  pentru {INDEX_LABELS[selectedIndex]}, interval{" "}
+                  <strong className="text-[var(--ink)]">
+                    {monthLabel(selectedIndexStats.from)} –{" "}
+                    {monthLabel(selectedIndexStats.through)}
+                  </strong>
+                  , {selectedIndexStats.currency}. Sursă:{" "}
+                  <strong className="text-[var(--ink)]">
+                    {selectedIndexStats.source}
+                  </strong>
+                  . Tip: {selectedIndexStats.returnType}.
+                  {selectedIndexStats.note ? ` ${selectedIndexStats.note}` : ""}
+                </p>
+              ) : (
+                <p>
+                  Nu există încă randamente istorice CMS pentru{" "}
+                  {INDEX_LABELS[selectedIndex]}; simularea folosește seria demo
+                  până importăm datasetul.
+                </p>
+              )}
+            </div>
           </>
         )}
 
@@ -510,9 +620,11 @@ export default function InvestitiiETF() {
 
             <Disclaimer modul="etf" />
             <DisclaimerNote>
-              Monte Carlo folosește momentan o serie demonstrativă de randamente
-              lunare până când importul de indici istorici este conectat la
-              backend. Rezultatele sunt scenarii ipotetice și nu constituie
+              Monte Carlo folosește{" "}
+              {historicalMonthlyReturns.length > 0
+                ? `${historicalMonthlyReturns.length} randamente lunare din CMS pentru ${INDEX_LABELS[selectedIndex]}`
+                : "o serie demonstrativă de randamente lunare, deoarece indicele selectat nu are încă date importate în CMS"}
+              . Rezultatele sunt scenarii ipotetice și nu constituie
               recomandare de investiții.
             </DisclaimerNote>
           </section>

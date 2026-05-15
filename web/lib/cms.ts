@@ -142,8 +142,18 @@ export const fetchFonduriETF = () => fetchCollection<FondETF>("fonduri-etf");
 
 export const fetchProduseUL = () => fetchCollection<ProdusUL>("produse-ul");
 
-export const fetchIndiciIstorici = () =>
-  fetchCollection<RandamentIndice>("indici-istorici");
+export const fetchIndiciIstorici = async (limit = 10000) => {
+  try {
+    const res = await fetch(`/api/indici-istorici?limit=${limit}&depth=0`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as PayloadListResponse<RandamentIndice>;
+    return data.docs ?? [];
+  } catch {
+    return [];
+  }
+};
 
 export const fetchInflatii = () => fetchCollection<Inflatie>("inflatii");
 

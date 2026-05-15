@@ -141,7 +141,7 @@ function firstPresent(headers: string[], aliases: string[]): number {
 
 function monthStart(value: string): string {
   const trimmed = value.trim()
-  const match = /^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/.exec(trimmed)
+  const match = /^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?/.exec(trimmed)
   if (!match) {
     throw new Error(`Invalid date "${value}". Use YYYY-MM or YYYY-MM-DD.`)
   }
@@ -188,26 +188,26 @@ async function main() {
   if (returnIndex < 0) throw new Error('CSV is missing a return/randament column')
 
   const payload = await getPayload({ config })
+  const existingRows = await payload.find({
+    collection: 'indici-istorici',
+    where: {
+      indice: { equals: indice },
+    },
+    depth: 0,
+    limit: 10000,
+  })
+  const existingByDate = new Map(
+    existingRows.docs.map((doc) => [monthStart(String(doc.data)), doc.id]),
+  )
   let created = 0
   let updated = 0
   let skipped = 0
 
-  for (const line of lines.slice(1)) {
+  for (const [index, line] of lines.slice(1).entries()) {
     const cells = parseCsvLine(line)
     const data = monthStart(cells[dateIndex] ?? '')
     const randamentLunar = parseReturn(cells[returnIndex] ?? '', args.format)
     const nume = `${INDEX_LABELS[indice]} ${data.slice(0, 7)}`
-
-    const existing = await payload.find({
-      collection: 'indici-istorici',
-      where: {
-        and: [
-          { indice: { equals: indice } },
-          { data: { equals: data } },
-        ],
-      },
-      limit: 1,
-    })
 
     const record = {
       nume,
@@ -222,25 +222,34 @@ async function main() {
       activ: true,
     }
 
-    if (existing.totalDocs > 0) {
+    const existingId = existingByDate.get(data)
+
+    if (existingId) {
       if (!args.update) {
         skipped++
         continue
       }
       await payload.update({
         collection: 'indici-istorici',
-        id: existing.docs[0].id,
+        id: existingId,
         data: record,
       })
       updated++
+      if ((index + 1) % 250 === 0) {
+        console.log(`Processed ${index + 1}/${lines.length - 1} rows...`)
+      }
       continue
     }
 
-    await payload.create({
+    const createdDoc = await payload.create({
       collection: 'indici-istorici',
       data: record,
     })
+    existingByDate.set(data, createdDoc.id)
     created++
+    if ((index + 1) % 250 === 0) {
+      console.log(`Processed ${index + 1}/${lines.length - 1} rows...`)
+    }
   }
 
   console.log(

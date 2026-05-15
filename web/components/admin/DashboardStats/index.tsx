@@ -172,13 +172,20 @@ function StatTile({
  */
 function ToolBreakdown({ byTool }: { byTool: AdminStats["byTool"] }) {
   const total =
-    byTool.credit + byTool.optimizare + byTool.depozit + byTool.investitii;
+    byTool.credit +
+    byTool.optimizare +
+    byTool.depozit +
+    byTool.investitii +
+    byTool.unit_linked +
+    byTool.comparator;
 
   const entries = [
     { key: "credit", label: "Credit", value: byTool.credit, color: "var(--theme-success-500)" },
     { key: "optimizare", label: "Optimizare", value: byTool.optimizare, color: "var(--theme-success-400)" },
     { key: "depozit", label: "Depozit", value: byTool.depozit, color: "var(--theme-success-650)" },
     { key: "investitii", label: "Investiții", value: byTool.investitii, color: "var(--theme-success-750)" },
+    { key: "unit_linked", label: "Unit-Linked", value: byTool.unit_linked, color: "var(--theme-success-850)" },
+    { key: "comparator", label: "Comparator", value: byTool.comparator, color: "var(--theme-success-950)" },
   ];
 
   return (
