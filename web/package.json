@@ -8,6 +8,7 @@
     "start": "next start",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "build:shiller-returns": "tsx scripts/build-shiller-index-returns.ts",
+    "build:yahoo-returns": "tsx scripts/build-yahoo-chart-returns.ts",
     "import:index-returns": "tsx --env-file=.env.local scripts/import-index-returns.ts"
   },
   "dependencies": {

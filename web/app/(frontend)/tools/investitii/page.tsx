@@ -134,6 +134,16 @@ const monthLabel = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
+const metadataForIndice = (
+  indice: RandamentIndice["indice"],
+  rows: RandamentIndice[],
+) =>
+  indexReturnMetadata.datasets.find(
+    (dataset) =>
+      dataset.indice === indice &&
+      rows.some((row) => row.importBatch === dataset.importBatch),
+  );
+
 export default function InvestitiiETF() {
   const [form, setForm] = useState({
     principal: 5000,
@@ -191,11 +201,10 @@ export default function InvestitiiETF() {
   const historicalMonthlyReturns = selectedIndexReturns.map(
     (row) => row.randamentLunar / 100,
   );
-  const selectedDatasetMetadata = indexReturnMetadata.datasets.find(
-    (dataset): dataset is IndexReturnDataset =>
-      dataset.indice === selectedIndex &&
-      selectedIndexReturns.some((row) => row.importBatch === dataset.importBatch),
-  );
+  const selectedDatasetMetadata = metadataForIndice(
+    selectedIndex,
+    selectedIndexReturns,
+  ) as IndexReturnDataset | undefined;
   const selectedIndexStats =
     selectedIndexReturns.length > 0
       ? {
@@ -397,7 +406,7 @@ export default function InvestitiiETF() {
                   : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600", "BET"] as const)
               ).map((indice) => ({
                 value: indice,
-                label: `${INDEX_LABELS[indice]}${
+                label: `${metadataForIndice(indice, indexReturns)?.label ?? INDEX_LABELS[indice]}${
                   selectedIndex === indice && historicalMonthlyReturns.length === 0
                     ? " · demo fallback"
                     : ""
@@ -444,6 +453,9 @@ export default function InvestitiiETF() {
                     {selectedIndexStats.source}
                   </strong>
                   . Tip: {selectedIndexStats.returnType}.
+                  {selectedDatasetMetadata?.licenseStatus
+                    ? ` Status date: ${selectedDatasetMetadata.licenseStatus}.`
+                    : ""}
                   {selectedIndexStats.note ? ` ${selectedIndexStats.note}` : ""}
                 </p>
               ) : (

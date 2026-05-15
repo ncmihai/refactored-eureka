@@ -16,6 +16,9 @@
       "sourcePage": "https://shillerdata.com/",
       "sourceDownload": "https://img1.wsimg.com/blobby/go/e5e77e0b-59d1-44d9-ab25-4763ac982e53/downloads/441f0d2c-37e4-4803-b4e2-8fe10407fbf6/ie_data.xls?ver=1778098504874",
       "importBatch": "shiller-sp500-monthly-total-return-1871-2026",
+      "licenseStatus": "review_required",
+      "displayAllowed": true,
+      "pdfExportAllowed": "review_required",
       "notes": "Uses the Data sheet Total Return Price column. Pre-1957 observations are a long-history U.S. equity market proxy, not the literal modern S&P 500."
     },
     {
@@ -33,7 +36,73 @@
       "sourceName": "FRED SP500 daily observations",
       "sourcePage": "https://fred.stlouisfed.org/series/SP500",
       "importBatch": "fred-sp500-monthly-2016-2026",
+      "licenseStatus": "review_required",
+      "displayAllowed": false,
+      "pdfExportAllowed": false,
       "notes": "Kept as an audit/source comparison file. FRED notes that the SP500 series contains 10 years of daily history and S&P reproduction restrictions."
+    },
+    {
+      "id": "msci-world-iwda-monthly-adjusted-return",
+      "indice": "MSCI_WORLD",
+      "label": "MSCI World proxy - iShares Core MSCI World UCITS ETF",
+      "file": "msci-world-iwda-monthly-adjusted-return.csv",
+      "currency": "EUR",
+      "returnType": "monthly_etf_adjusted_close_return_proxy",
+      "coverage": {
+        "from": "2009-10",
+        "through": "2026-04",
+        "months": 199
+      },
+      "sourceName": "Yahoo Finance chart data for IWDA.AS adjusted close",
+      "sourcePage": "https://finance.yahoo.com/quote/IWDA.AS/history/",
+      "sourceDownload": "https://query2.finance.yahoo.com/v8/finance/chart/IWDA.AS?period1=0&period2=1778716800&interval=1mo&events=history&includeAdjustedClose=true",
+      "importBatch": "yahoo-iwda-msci-world-proxy-2009-2026",
+      "licenseStatus": "provisional_review_later",
+      "displayAllowed": true,
+      "pdfExportAllowed": false,
+      "notes": "Provisional ETF proxy for MSCI World, not official MSCI index data. Adjusted close includes fund-level effects such as TER, tracking difference, spreads, exchange listing, and any provider adjustments."
+    },
+    {
+      "id": "stoxx600-exsa-monthly-adjusted-return",
+      "indice": "STOXX_600",
+      "label": "STOXX Europe 600 proxy - iShares STOXX Europe 600 UCITS ETF (DE)",
+      "file": "stoxx600-exsa-monthly-adjusted-return.csv",
+      "currency": "EUR",
+      "returnType": "monthly_etf_adjusted_close_return_proxy",
+      "coverage": {
+        "from": "2008-02",
+        "through": "2026-04",
+        "months": 219
+      },
+      "sourceName": "Yahoo Finance chart data for EXSA.DE adjusted close",
+      "sourcePage": "https://finance.yahoo.com/quote/EXSA.DE/history/",
+      "sourceDownload": "https://query2.finance.yahoo.com/v8/finance/chart/EXSA.DE?period1=0&period2=1778716800&interval=1mo&events=history&includeAdjustedClose=true",
+      "importBatch": "yahoo-exsa-stoxx600-proxy-2008-2026",
+      "licenseStatus": "provisional_review_later",
+      "displayAllowed": true,
+      "pdfExportAllowed": false,
+      "notes": "Provisional ETF proxy for STOXX Europe 600, not official STOXX index data. Adjusted close includes fund-level effects such as TER, tracking difference, spreads, exchange listing, and any provider adjustments."
+    },
+    {
+      "id": "ftse-all-world-vwce-monthly-adjusted-return",
+      "indice": "FTSE_ALL_WORLD",
+      "label": "FTSE All-World proxy - Vanguard FTSE All-World UCITS ETF",
+      "file": "ftse-all-world-vwce-monthly-adjusted-return.csv",
+      "currency": "EUR",
+      "returnType": "monthly_etf_adjusted_close_return_proxy",
+      "coverage": {
+        "from": "2019-08",
+        "through": "2026-04",
+        "months": 81
+      },
+      "sourceName": "Yahoo Finance chart data for VWCE.DE adjusted close",
+      "sourcePage": "https://finance.yahoo.com/quote/VWCE.DE/history/",
+      "sourceDownload": "https://query2.finance.yahoo.com/v8/finance/chart/VWCE.DE?period1=0&period2=1778716800&interval=1mo&events=history&includeAdjustedClose=true",
+      "importBatch": "yahoo-vwce-ftse-all-world-proxy-2019-2026",
+      "licenseStatus": "provisional_review_later",
+      "displayAllowed": true,
+      "pdfExportAllowed": false,
+      "notes": "Provisional ETF proxy for FTSE All-World, not official FTSE Russell index data. Shorter history because VWCE launched later."
     }
   ],
   "plannedDatasets": [
@@ -41,19 +110,19 @@
       "indice": "STOXX_600",
       "label": "STOXX Europe 600",
       "preferredReturnType": "monthly_total_return_or_net_return",
-      "status": "Needs licensing/source decision before repo import"
+      "status": "Official index dataset still needs licensing/source decision; provisional ETF proxy imported."
     },
     {
       "indice": "MSCI_WORLD",
       "label": "MSCI World",
       "preferredReturnType": "monthly_net_total_return",
-      "status": "Needs licensing/source decision before repo import"
+      "status": "Official index dataset still needs licensing/source decision; provisional ETF proxy imported."
     },
     {
       "indice": "FTSE_ALL_WORLD",
       "label": "FTSE All-World",
       "preferredReturnType": "monthly_total_return_or_etf_proxy",
-      "status": "Candidate global proxy if MSCI licensing is too restrictive"
+      "status": "Provisional ETF proxy imported; official/index-provider terms still need review."
     }
   ]
 }

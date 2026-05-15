@@ -137,9 +137,12 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Structură repo-locală pentru dataseturi istorice — `web/data/index-returns/` cu README + metadata pentru surse, acoperire, tip randament și batch import
 - [x] Import complet `SP500` long-history proxy în `Indici_Istorici` — 1.863 randamente lunare din Robert Shiller / Irrational Exuberance, 1871-02 → 2026-04, batch `shiller-sp500-monthly-total-return-1871-2026`
 - [x] Păstrare FRED `SP500` recent ca fișier audit/comparație — 119 randamente lunare price-return, 2016-06 → 2026-04, batch `fred-sp500-monthly-2016-2026`
+- [x] Import provizoriu `MSCI_WORLD` via proxy ETF IWDA.AS — 199 randamente lunare adjusted-close, 2009-10 → 2026-04, batch `yahoo-iwda-msci-world-proxy-2009-2026`
+- [x] Import provizoriu `STOXX_600` via proxy ETF EXSA.DE — 219 randamente lunare adjusted-close, 2008-02 → 2026-04, batch `yahoo-exsa-stoxx600-proxy-2008-2026`
+- [x] Import provizoriu `FTSE_ALL_WORLD` via proxy ETF VWCE.DE — 81 randamente lunare adjusted-close, 2019-08 → 2026-04, batch `yahoo-vwce-ftse-all-world-proxy-2019-2026`
 - [ ] Integrare `yfinance` doar ca sursă auxiliară pentru ticker metadata/TER unde e stabil; randamentele istorice rămân în DB pentru reproducibilitate
 - [ ] Cache Redis pentru seriile istorice (`index_returns:{symbol}` TTL 24h) + endpoint diagnostic pentru freshness
-- [/] Politică surse date: metadata locală introdusă; MSCI World / STOXX 600 rămân blocate până alegem surse/licențe potrivite
+- [/] Politică surse date: metadata locală introdusă; MSCI World / STOXX 600 / FTSE All-World au proxy-uri provizorii pentru demo intern, PDF/export comercial rămâne blocat până la review licențe
 
 ### Faza 2B — ETF Monte Carlo
 - [x] Motor Monte Carlo historical bootstrap în backend — NumPy vectorizat, block size default 12 luni, 10k iter, seed opțional pentru reproducibilitate
@@ -150,7 +153,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Teste unitare: shape output, seed determinism, percentile monotonicity, target probability, fee/contribution invariants
 - [x] Benchmark local: 10k × 30 ani în ~223ms pentru motor pur
 - [x] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, final distribution și copy explicativ; citește `Indici_Istorici` din CMS și folosește serie demo doar ca fallback pentru indici neimportați
-- [x] UI ETF afișează contextul datasetului Monte Carlo: număr randamente, interval, monedă, sursă și tip randament
+- [x] UI ETF afișează contextul datasetului Monte Carlo: număr randamente, interval, monedă, sursă, tip randament și status date/proxy
 
 ### Faza 2C — Unit-Linked stand-alone
 - [x] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
