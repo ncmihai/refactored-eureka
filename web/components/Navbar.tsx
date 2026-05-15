@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
+import { fetchAuthStatus } from "@/lib/simulari";
 
 const tools = [
   {
@@ -40,8 +42,18 @@ const tools = [
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [auth, setAuth] = useState<AuthStatus>({
+    authenticated: false,
+    user: null,
+  });
   const ref = useRef<HTMLDivElement>(null);
   const anyActive = tools.some((t) => pathname?.startsWith(t.href));
+
+  useEffect(() => {
+    fetchAuthStatus().then(setAuth).catch(() => {
+      setAuth({ authenticated: false, user: null });
+    });
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,12 +154,26 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/simulari" className="btn-ghost text-sm">
-            Simulări
-          </Link>
-          <Link href="/admin" className="btn-ghost text-sm">
-            Admin
-          </Link>
+          {auth.authenticated && auth.user ? (
+            <>
+              <Link href="/simulari" className="btn-ghost text-sm">
+                Simulări
+              </Link>
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
+                <span className="max-w-[140px] truncate">
+                  {displayName(auth.user)}
+                </span>
+                <span className="pill">{roleLabel(auth.user.role)}</span>
+              </span>
+              <Link href="/admin" className="btn-ghost text-sm">
+                Admin
+              </Link>
+            </>
+          ) : (
+            <Link href="/admin" className="btn-ghost text-sm">
+              Intră
+            </Link>
+          )}
         </div>
       </div>
     </header>

@@ -169,9 +169,6 @@ export default function InvestitiiETF() {
     broker_fee_fixed: 0,
     holding_tax: 10,
   });
-  const [mode, setMode] = useState<"deterministic" | "monte_carlo">(
-    "deterministic",
-  );
   const [mcForm, setMcForm] = useState({
     iterations: 10000,
     block_size: 12,
@@ -181,12 +178,18 @@ export default function InvestitiiETF() {
   const [result, setResult] = useState<InvestitieResponse | null>(null);
   const [mcResult, setMcResult] = useState<MonteCarloResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mcLoading, setMcLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mcError, setMcError] = useState<string | null>(null);
   const [funds, setFunds] = useState<FondETF[]>([]);
   const [indexReturns, setIndexReturns] = useState<RandamentIndice[]>([]);
   const [selectedFundId, setSelectedFundId] = useState("");
-  const [lastInputSnapshot, setLastInputSnapshot] = useState<unknown>(null);
-  const [lastProductSnapshots, setLastProductSnapshots] =
+  const [deterministicInputSnapshot, setDeterministicInputSnapshot] =
+    useState<unknown>(null);
+  const [deterministicProductSnapshots, setDeterministicProductSnapshots] =
+    useState<unknown>(undefined);
+  const [mcInputSnapshot, setMcInputSnapshot] = useState<unknown>(null);
+  const [mcProductSnapshots, setMcProductSnapshots] =
     useState<unknown>(undefined);
   const [selectedIndex, setSelectedIndex] =
     useState<RandamentIndice["indice"]>("SP500");
@@ -280,59 +283,83 @@ export default function InvestitiiETF() {
     setError(null);
     setResult(null);
     setMcResult(null);
-    setLastInputSnapshot(null);
-    setLastProductSnapshots(undefined);
+    setDeterministicInputSnapshot(null);
+    setDeterministicProductSnapshots(undefined);
+    setMcInputSnapshot(null);
+    setMcProductSnapshots(undefined);
     try {
-      const endpoint =
-        mode === "deterministic"
-          ? `${BACKEND_URL}/api/v1/investitii/simulate`
-          : `${BACKEND_URL}/api/v1/investitii/monte-carlo`;
-      const payload =
-        mode === "deterministic"
-          ? {
-              principal: form.principal,
-              months: form.months,
-              monthly_contribution: form.monthly_contribution,
-              annual_return: form.annual_return / 100,
-              ter: form.ter / 100,
-              broker_fee_pct: form.broker_fee_pct / 100,
-              broker_fee_fixed: form.broker_fee_fixed,
-              holding_tax: form.holding_tax / 100,
-            }
-          : {
-              principal: form.principal,
-              months: form.months,
-              monthly_contribution: form.monthly_contribution,
-              monthly_returns: monthlyReturnsForMonteCarlo,
-              monthly_return_dates:
-                historicalMonthlyReturns.length > 0
-                  ? historicalMonthlyReturnDates
-                  : null,
-              ter: form.ter / 100,
-              broker_fee_pct: form.broker_fee_pct / 100,
-              broker_fee_fixed: form.broker_fee_fixed,
-              holding_tax: form.holding_tax / 100,
-              iterations: mcForm.iterations,
-              block_size: mcForm.block_size,
-              seed: mcForm.seed,
-              target_value: mcForm.target_value,
-            };
-      const res = await fetch(endpoint, {
+      const payload = {
+        principal: form.principal,
+        months: form.months,
+        monthly_contribution: form.monthly_contribution,
+        annual_return: form.annual_return / 100,
+        ter: form.ter / 100,
+        broker_fee_pct: form.broker_fee_pct / 100,
+        broker_fee_fixed: form.broker_fee_fixed,
+        holding_tax: form.holding_tax / 100,
+      };
+      const res = await fetch(`${BACKEND_URL}/api/v1/investitii/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      const response = await res.json();
-      if (mode === "deterministic") {
-        setResult(response);
-      } else {
-        setMcResult(response);
-      }
+      const response = (await res.json()) as InvestitieResponse;
       const productSnapshots = selectedFund ? { fondETF: selectedFund } : undefined;
-      setLastProductSnapshots(productSnapshots);
-      setLastInputSnapshot({
-        mode,
+      setResult(response);
+      setDeterministicProductSnapshots(productSnapshots);
+      setDeterministicInputSnapshot({
+        mode: "deterministic",
+        form,
+        selectedFundId,
+        productSnapshots,
+        requestPayload: payload,
+        currency,
+        inflation,
+      });
+      captureSimulation("investitii");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runMonteCarlo = async () => {
+    setMcLoading(true);
+    setMcError(null);
+    setMcResult(null);
+    setMcInputSnapshot(null);
+    setMcProductSnapshots(undefined);
+    try {
+      const payload = {
+        principal: form.principal,
+        months: form.months,
+        monthly_contribution: form.monthly_contribution,
+        monthly_returns: monthlyReturnsForMonteCarlo,
+        monthly_return_dates:
+          historicalMonthlyReturns.length > 0 ? historicalMonthlyReturnDates : null,
+        ter: form.ter / 100,
+        broker_fee_pct: form.broker_fee_pct / 100,
+        broker_fee_fixed: form.broker_fee_fixed,
+        holding_tax: form.holding_tax / 100,
+        iterations: mcForm.iterations,
+        block_size: mcForm.block_size,
+        seed: mcForm.seed,
+        target_value: mcForm.target_value,
+      };
+      const res = await fetch(`${BACKEND_URL}/api/v1/investitii/monte-carlo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      const response = (await res.json()) as MonteCarloResponse;
+      const productSnapshots = selectedFund ? { fondETF: selectedFund } : undefined;
+      setMcResult(response);
+      setMcProductSnapshots(productSnapshots);
+      setMcInputSnapshot({
+        mode: "monte_carlo",
         form,
         mcForm,
         selectedFundId,
@@ -345,9 +372,9 @@ export default function InvestitiiETF() {
       });
       captureSimulation("investitii");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Eroare necunoscută");
+      setMcError(err instanceof Error ? err.message : "Eroare necunoscută");
     } finally {
-      setLoading(false);
+      setMcLoading(false);
     }
   };
 
@@ -374,15 +401,6 @@ export default function InvestitiiETF() {
         onSubmit={submit}
         className="card p-6 md:p-7 grid grid-cols-1 md:grid-cols-3 gap-5 reveal reveal-4"
       >
-        <Select
-          label="Mod simulare"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "deterministic", label: "Determinist" },
-            { value: "monte_carlo", label: "Monte Carlo" },
-          ]}
-        />
         <Field
           label="Sumă inițială"
           suffix="€"
@@ -436,90 +454,119 @@ export default function InvestitiiETF() {
           value={form.holding_tax}
           onChange={(v) => update("holding_tax", v)}
         />
-        {mode === "monte_carlo" && (
-          <>
-            <Select
-              label="Indice istoric"
-              value={selectedIndex}
-              onChange={setSelectedIndex}
-              options={(
-                availableIndices.length > 0
-                  ? availableIndices
-                  : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600", "BET"] as const)
-              ).map((indice) => ({
-                value: indice,
-                label: `${metadataForIndice(indice, indexReturns)?.label ?? INDEX_LABELS[indice]}${
-                  selectedIndex === indice && historicalMonthlyReturns.length === 0
-                    ? " · demo fallback"
-                    : ""
-                }`,
-              }))}
-            />
-            <Field
-              label="Iterații"
-              value={mcForm.iterations}
-              onChange={(v) => updateMc("iterations", v)}
-            />
-            <Field
-              label="Block bootstrap"
-              suffix="luni"
-              value={mcForm.block_size}
-              onChange={(v) => updateMc("block_size", v)}
-            />
-            <Field
-              label="Target"
-              suffix="€"
-              value={mcForm.target_value}
-              onChange={(v) => updateMc("target_value", v)}
-            />
-            <Field
-              label="Seed"
-              value={mcForm.seed}
-              onChange={(v) => updateMc("seed", v)}
-            />
-            <div className="md:col-span-3 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
-              {selectedIndexStats ? (
-                <p>
-                  Seria Monte Carlo folosește{" "}
-                  <strong className="text-[var(--ink)]">
-                    {selectedIndexStats.count.toLocaleString("ro-RO")} randamente
-                    lunare
-                  </strong>{" "}
-                  pentru {INDEX_LABELS[selectedIndex]}, interval{" "}
-                  <strong className="text-[var(--ink)]">
-                    {monthLabel(selectedIndexStats.from)} –{" "}
-                    {monthLabel(selectedIndexStats.through)}
-                  </strong>
-                  , {selectedIndexStats.currency}. Sursă:{" "}
-                  <strong className="text-[var(--ink)]">
-                    {selectedIndexStats.source}
-                  </strong>
-                  . Tip: {selectedIndexStats.returnType}.
-                  {selectedDatasetMetadata?.licenseStatus
-                    ? ` Status date: ${selectedDatasetMetadata.licenseStatus}.`
-                    : ""}
-                  {selectedIndexStats.note ? ` ${selectedIndexStats.note}` : ""}
-                </p>
-              ) : (
-                <p>
-                  Nu există încă randamente istorice CMS pentru{" "}
-                  {INDEX_LABELS[selectedIndex]}; simularea folosește seria demo
-                  până importăm datasetul.
-                </p>
-              )}
-            </div>
-          </>
-        )}
 
         <div className="md:col-span-3 flex items-center gap-4 pt-2 border-t border-[var(--border)]">
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Calculez…" : "Simulează"}
+            {loading ? "Calculez…" : "Simulează determinist"}
           </button>
           {error && (
             <span className="text-sm text-[var(--danger)]">{error}</span>
           )}
         </div>
       </form>
+
+      <section className="card p-6 md:p-7 space-y-5 reveal reveal-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.14em] text-[var(--muted-2)]">
+              Sub-tool investiții
+            </div>
+            <h2 className="font-serif h-card tracking-tight mt-1">
+              Monte Carlo istoric
+            </h2>
+            <p className="text-sm text-[var(--muted)] mt-2 max-w-3xl">
+              Rulează separat bootstrap-ul istoric și scenariile de criză. Nu se
+              consumă timp de calcul când folosești proiecția deterministă.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={mcLoading}
+            className="btn-primary md:mt-1"
+            onClick={runMonteCarlo}
+          >
+            {mcLoading ? "Rulez Monte Carlo…" : "Rulează Monte Carlo"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Select
+            label="Indice istoric"
+            value={selectedIndex}
+            onChange={setSelectedIndex}
+            options={(
+              availableIndices.length > 0
+                ? availableIndices
+                : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600", "BET"] as const)
+            ).map((indice) => ({
+              value: indice,
+              label: `${metadataForIndice(indice, indexReturns)?.label ?? INDEX_LABELS[indice]}${
+                selectedIndex === indice && historicalMonthlyReturns.length === 0
+                  ? " · demo fallback"
+                  : ""
+              }`,
+            }))}
+          />
+          <Field
+            label="Iterații"
+            value={mcForm.iterations}
+            onChange={(v) => updateMc("iterations", v)}
+          />
+          <Field
+            label="Block bootstrap"
+            suffix="luni"
+            value={mcForm.block_size}
+            onChange={(v) => updateMc("block_size", v)}
+          />
+          <Field
+            label="Target"
+            suffix="€"
+            value={mcForm.target_value}
+            onChange={(v) => updateMc("target_value", v)}
+          />
+          <Field
+            label="Seed"
+            value={mcForm.seed}
+            onChange={(v) => updateMc("seed", v)}
+          />
+        </div>
+
+        <div className="border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
+          {selectedIndexStats ? (
+            <p>
+              Seria Monte Carlo folosește{" "}
+              <strong className="text-[var(--ink)]">
+                {selectedIndexStats.count.toLocaleString("ro-RO")} randamente
+                lunare
+              </strong>{" "}
+              pentru {INDEX_LABELS[selectedIndex]}, interval{" "}
+              <strong className="text-[var(--ink)]">
+                {monthLabel(selectedIndexStats.from)} –{" "}
+                {monthLabel(selectedIndexStats.through)}
+              </strong>
+              , {selectedIndexStats.currency}. Sursă:{" "}
+              <strong className="text-[var(--ink)]">
+                {selectedIndexStats.source}
+              </strong>
+              . Tip: {selectedIndexStats.returnType}.
+              {selectedDatasetMetadata?.licenseStatus
+                ? ` Status date: ${selectedDatasetMetadata.licenseStatus}.`
+                : ""}
+              {selectedIndexStats.note ? ` ${selectedIndexStats.note}` : ""}
+            </p>
+          ) : (
+            <p>
+              Nu există încă randamente istorice CMS pentru{" "}
+              {INDEX_LABELS[selectedIndex]}; simularea folosește seria demo până
+              importăm datasetul.
+            </p>
+          )}
+        </div>
+
+        {mcError && (
+          <p className="text-sm text-[var(--danger)]">{mcError}</p>
+        )}
+      </section>
 
       {mcResult && (() => {
         const sym = currencySymbol(currency);
@@ -559,12 +606,12 @@ export default function InvestitiiETF() {
               <CurrencyToggle value={currency} onChange={setCurrency} />
             </div>
 
-            {lastInputSnapshot !== null && (
+            {mcInputSnapshot !== null && (
               <SaveSimulationPanel
                 tool="investitii"
-                inputSnapshot={lastInputSnapshot}
+                inputSnapshot={mcInputSnapshot}
                 outputSummary={mcResult}
-                productSnapshots={lastProductSnapshots}
+                productSnapshots={mcProductSnapshots}
               />
             )}
 
@@ -784,12 +831,12 @@ export default function InvestitiiETF() {
               <CurrencyToggle value={currency} onChange={setCurrency} />
             </div>
 
-            {lastInputSnapshot !== null && (
+            {deterministicInputSnapshot !== null && (
               <SaveSimulationPanel
                 tool="investitii"
-                inputSnapshot={lastInputSnapshot}
+                inputSnapshot={deterministicInputSnapshot}
                 outputSummary={result}
-                productSnapshots={lastProductSnapshots}
+                productSnapshots={deterministicProductSnapshots}
               />
             )}
 

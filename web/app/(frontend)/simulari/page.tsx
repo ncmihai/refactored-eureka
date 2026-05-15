@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader, Select, TableCard, Td, Th } from "@/components/ui";
-import { fetchSimulari, type SimulareDoc } from "@/lib/simulari";
+import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
+import { fetchAuthStatus, fetchSimulari, type SimulareDoc } from "@/lib/simulari";
 
 const TOOL_LABELS: Record<string, string> = {
   credit: "Credit",
@@ -18,10 +19,19 @@ export default function SimulariPage() {
   const [tool, setTool] = useState("all");
   const [query, setQuery] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
 
   useEffect(() => {
-    fetchSimulari().then((items) => {
-      setDocs(items);
+    async function load() {
+      const status = await fetchAuthStatus();
+      setAuth(status);
+      if (status.authenticated) {
+        setDocs(await fetchSimulari());
+      }
+      setLoaded(true);
+    }
+    load().catch(() => {
+      setAuth({ authenticated: false, user: null });
       setLoaded(true);
     });
   }, []);
@@ -45,6 +55,15 @@ export default function SimulariPage() {
         title="Simulări salvate."
         description="Istoric pentru consultanți și admini de firmă. Guest poate rula unelte, dar salvarea cere autentificare."
       />
+
+      {auth?.authenticated && auth.user && (
+        <div className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-sm">
+          <span>
+            Conectat ca <strong>{displayName(auth.user)}</strong>
+          </span>
+          <span className="pill">{roleLabel(auth.user.role)}</span>
+        </div>
+      )}
 
       <div className="card p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
         <Select
@@ -73,15 +92,19 @@ export default function SimulariPage() {
         </label>
       </div>
 
-      {!loaded ? (
+      {!loaded || auth === null ? (
         <p className="text-sm text-[var(--muted)]">Se încarcă…</p>
-      ) : docs.length === 0 ? (
+      ) : !auth.authenticated ? (
         <div className="card p-6 text-sm text-[var(--muted)]">
-          Nu există simulări vizibile. Dacă nu ești autentificat, intră în{" "}
+          Istoricul de simulări este disponibil după autentificare.{" "}
           <a className="underline" href="/admin">
-            admin
+            Intră în admin
           </a>
           .
+        </div>
+      ) : docs.length === 0 ? (
+        <div className="card p-6 text-sm text-[var(--muted)]">
+          Nu există simulări vizibile pentru rolul tău.
         </div>
       ) : (
         <TableCard>

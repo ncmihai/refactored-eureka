@@ -1,5 +1,4 @@
 import config from "@payload-config";
-import { headers as getHeaders } from "next/headers";
 import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 import { buildSimulationPdf } from "@/lib/pdf";
@@ -27,12 +26,12 @@ function canExport(doc: { user?: Relation; firm?: Relation }, user: AppUser) {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const payload = await getPayload({ config });
-  const auth = await payload.auth({ headers: await getHeaders() });
+  const auth = await payload.auth({ headers: req.headers });
   const user = auth.user as AppUser | null;
   if (!user) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });

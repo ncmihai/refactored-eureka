@@ -1,6 +1,5 @@
 import config from "@payload-config";
 import { randomBytes } from "crypto";
-import { headers as getHeaders } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getPayload, type Where } from "payload";
 
@@ -29,14 +28,14 @@ function newShareId() {
   return randomBytes(12).toString("base64url");
 }
 
-async function currentUser() {
+async function currentUser(req: NextRequest) {
   const payload = await getPayload({ config });
-  const auth = await payload.auth({ headers: await getHeaders() });
+  const auth = await payload.auth({ headers: req.headers });
   return { payload, user: auth.user as AppUser | null };
 }
 
-export async function GET() {
-  const { payload, user } = await currentUser();
+export async function GET(req: NextRequest) {
+  const { payload, user } = await currentUser(req);
   if (!user) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
@@ -62,7 +61,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { payload, user } = await currentUser();
+  const { payload, user } = await currentUser(req);
   if (!user) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }

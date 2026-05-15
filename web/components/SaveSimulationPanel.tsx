@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
 import { capturePdfExport, type ToolSlug } from "@/lib/posthog";
-import { saveSimulation, type SimulareDoc } from "@/lib/simulari";
+import { fetchAuthStatus, saveSimulation, type SimulareDoc } from "@/lib/simulari";
 
 export function SaveSimulationPanel({
   tool,
@@ -21,6 +22,13 @@ export function SaveSimulationPanel({
   const [saved, setSaved] = useState<SimulareDoc | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
+
+  useEffect(() => {
+    fetchAuthStatus().then(setAuth).catch(() => {
+      setAuth({ authenticated: false, user: null });
+    });
+  }, []);
 
   const shareUrl =
     saved && typeof window !== "undefined"
@@ -28,6 +36,10 @@ export function SaveSimulationPanel({
       : null;
 
   const handleSave = async () => {
+    if (auth && !auth.authenticated) {
+      setError("Autentificarea este necesară pentru salvare.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -53,27 +65,50 @@ export function SaveSimulationPanel({
 
   return (
     <div className="card p-5 flex flex-col gap-4">
-      <div className="flex flex-col md:flex-row md:items-end gap-3">
-        <label className="flex flex-col gap-1.5 text-sm flex-1">
-          <span className="text-[var(--foreground)] font-medium">
-            Alias client
-          </span>
-          <input
-            className="input"
-            value={clientAlias}
-            onChange={(e) => setClientAlias(e.target.value)}
-            placeholder="Client demo"
-          />
-        </label>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={saving}
-          onClick={handleSave}
-        >
-          {saving ? "Salvez…" : "Salvează simularea"}
-        </button>
-      </div>
+      {auth === null ? (
+        <div className="text-sm text-[var(--muted)]">
+          Verific autentificarea…
+        </div>
+      ) : auth.authenticated && auth.user ? (
+        <>
+          <div className="flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
+            <span>
+              Salvare deblocat pentru {displayName(auth.user)}
+            </span>
+            <span className="pill">{roleLabel(auth.user.role)}</span>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-end gap-3">
+            <label className="flex flex-col gap-1.5 text-sm flex-1">
+              <span className="text-[var(--foreground)] font-medium">
+                Alias client
+              </span>
+              <input
+                className="input"
+                value={clientAlias}
+                onChange={(e) => setClientAlias(e.target.value)}
+                placeholder="Client demo"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={saving}
+              onClick={handleSave}
+            >
+              {saving ? "Salvez…" : "Salvează simularea"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="text-sm text-[var(--muted)]">
+          Salvarea simulărilor, istoricul firmei și exportul PDF sunt disponibile
+          după autentificare.{" "}
+          <a className="underline" href="/admin">
+            Intră în admin
+          </a>
+          .
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-[var(--danger)]">

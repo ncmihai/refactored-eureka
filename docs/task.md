@@ -153,6 +153,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Teste unitare: shape output, seed determinism, percentile monotonicity, target probability, fee/contribution invariants
 - [x] Benchmark local: 10k × 30 ani în ~223ms pentru motor pur
 - [x] UI ETF: toggle Determinist / Monte Carlo, fan chart P10-P90, final distribution și copy explicativ; citește `Indici_Istorici` din CMS și folosește serie demo doar ca fallback pentru indici neimportați
+- [x] UI ETF: Monte Carlo separat ca sub-tool cu buton propriu; proiecția deterministă nu mai rulează bootstrap-ul istoric implicit
 - [x] UI ETF afișează contextul datasetului Monte Carlo: număr randamente, interval, monedă, sursă, tip randament și status date/proxy
 
 ### Faza 2C — Unit-Linked stand-alone
@@ -176,6 +177,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 ### Faza 2E — Sesiuni, PDF & pitch readiness
 - [x] Colecție/tablă `Simulari` — tool, input snapshot, output summary, product snapshots, firm/user, createdAt, shareId, expiresAt
 - [x] Salvare sesiune cu ID unic + link shareable; public view read-only fără PII; buton „Salvează simularea” pe toate uneltele
+- [x] UI role-aware pentru beta: `/api/auth/me`, navbar cu utilizator/rol, `Simulări` și salvare ascunse/blocate pentru guest
 - [x] Snapshot complet parametri produse pe simulare (nu FK live) pentru reproducibilitate legală/comercială
 - [x] Export PDF v1 pentru Credit + Optimizare; include firmă/consultant, brand color, disclaimer, timestamp, hash input/output
 - [ ] Export PDF v2 pentru ETF/UL/Comparator cu fan chart și surse date

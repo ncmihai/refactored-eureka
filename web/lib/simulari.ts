@@ -1,4 +1,5 @@
 import type { ToolSlug } from "@/lib/posthog";
+import type { AuthStatus } from "@/lib/auth";
 
 export type SimulareDoc = {
   id: string;
@@ -41,4 +42,10 @@ export async function fetchSimulari(): Promise<SimulareDoc[]> {
   if (!res.ok) return [];
   const body = (await res.json()) as { docs?: SimulareDoc[] };
   return body.docs ?? [];
+}
+
+export async function fetchAuthStatus(): Promise<AuthStatus> {
+  const res = await fetch("/api/auth/me", { cache: "no-store" });
+  if (!res.ok) return { authenticated: false, user: null };
+  return (await res.json()) as AuthStatus;
 }
