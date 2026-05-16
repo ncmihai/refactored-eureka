@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS "simulari" (
   "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
 );
 
+ALTER TABLE "simulari" ALTER COLUMN "id" DROP IDENTITY IF EXISTS;
 CREATE SEQUENCE IF NOT EXISTS "simulari_id_seq" OWNED BY "simulari"."id";
 SELECT setval('"simulari_id_seq"', COALESCE((SELECT MAX("id") FROM "simulari"), 0) + 1, false);
 ALTER TABLE "simulari" ALTER COLUMN "id" SET DEFAULT nextval('"simulari_id_seq"'::regclass);
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS "_simulari_v" (
   "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL
 );
 
+ALTER TABLE "_simulari_v" ALTER COLUMN "id" DROP IDENTITY IF EXISTS;
 CREATE SEQUENCE IF NOT EXISTS "_simulari_v_id_seq" OWNED BY "_simulari_v"."id";
 SELECT setval('"_simulari_v_id_seq"', COALESCE((SELECT MAX("id") FROM "_simulari_v"), 0) + 1, false);
 ALTER TABLE "_simulari_v" ALTER COLUMN "id" SET DEFAULT nextval('"_simulari_v_id_seq"'::regclass);
