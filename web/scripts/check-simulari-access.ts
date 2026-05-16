@@ -40,8 +40,8 @@ const simA2: SimulariDocLike = { user: 66, firm: firmA };
 const simB1: SimulariDocLike = { user: 22, firm: firmB };
 
 assert.equal(simulariReadWhereForUser(null), false, "guest read should be denied");
-assert.deepEqual(simulariReadWhereForUser(consultantA), { user: { equals: "11" } });
-assert.deepEqual(simulariReadWhereForUser(adminA), { firm: { equals: "101" } });
+assert.deepEqual(simulariReadWhereForUser(consultantA), { user: { equals: 11 } });
+assert.deepEqual(simulariReadWhereForUser(adminA), { firm: { equals: 101 } });
 assert.equal(simulariReadWhereForUser(superAdmin), true);
 
 assert.equal(canReadSimulation(simA1, consultantA), true, "consultant reads own simulation");

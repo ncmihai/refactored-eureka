@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       outputSummary: body.outputSummary,
       productSnapshots: body.productSnapshots ?? null,
       firm: relationId(user.firm),
-      user: String(user.id),
+      user: user.id,
       shareId: newShareId(),
       shareExpiresAt: expires.toISOString(),
       status: "active",

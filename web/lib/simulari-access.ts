@@ -20,10 +20,10 @@ export type SimulariDocLike = {
   firm?: RelationRef;
 } | null | undefined;
 
-export function relationId(value: RelationRef): string | undefined {
+export function relationId(value: RelationRef): string | number | undefined {
   if (!value) return undefined;
-  if (typeof value === "string" || typeof value === "number") return String(value);
-  return value.id === undefined || value.id === null ? undefined : String(value.id);
+  if (typeof value === "string" || typeof value === "number") return value;
+  return value.id === undefined || value.id === null ? undefined : value.id;
 }
 
 export function simulariReadWhereForUser(user: SimulariUserLike): Where | true | false {
@@ -35,7 +35,7 @@ export function simulariReadWhereForUser(user: SimulariUserLike): Where | true |
     return { firm: { equals: firmId } };
   }
 
-  return { user: { equals: String(user.id) } };
+  return { user: { equals: user.id } };
 }
 
 export function canReadSimulation(doc: SimulariDocLike, user: SimulariUserLike) {
@@ -43,7 +43,7 @@ export function canReadSimulation(doc: SimulariDocLike, user: SimulariUserLike) 
   if (user.role === "super_admin") return true;
   if (user.role === "admin_firma") {
     const firmId = relationId(user.firm);
-    return Boolean(firmId && firmId === relationId(doc.firm));
+    return Boolean(firmId && String(firmId) === String(relationId(doc.firm)));
   }
-  return relationId(doc.user) === String(user.id);
+  return String(relationId(doc.user)) === String(user.id);
 }
