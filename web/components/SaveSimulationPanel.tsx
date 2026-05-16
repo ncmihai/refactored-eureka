@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
+import { accountStatusLabel, displayName, hasBetaAccess, roleLabel, type AuthStatus } from "@/lib/auth";
 import { capturePdfExport, type ToolSlug } from "@/lib/posthog";
 import { fetchAuthStatus, saveSimulation, type SimulareDoc } from "@/lib/simulari";
 
@@ -18,6 +18,7 @@ function saveErrorMessage(message: string) {
     login_required: "Autentificarea este necesară pentru salvare.",
     invalid_tool: "Unealta curentă nu poate fi salvată.",
     missing_snapshot: "Lipsește snapshot-ul simulării. Rulează din nou simularea și încearcă salvarea.",
+    account_pending_approval: "Contul este în așteptare. Un Super Admin trebuie să aprobe accesul înainte de salvare.",
     "HTTP 500": "Nu am putut salva simularea. Verifică sesiunea de admin și reîncearcă.",
   };
   return map[message] ?? (message.startsWith("HTTP 5") ? map["HTTP 500"] : message);
@@ -56,6 +57,7 @@ export function SaveSimulationPanel({
     [clientAlias, inputSnapshot, outputSummary, productSnapshots, tool],
   );
   const alreadySaved = Boolean(saved && savedSignature === currentSignature);
+  const betaAccess = auth?.user ? hasBetaAccess(auth.user) : false;
 
   useEffect(() => {
     fetchAuthStatus().then(setAuth).catch(() => {
@@ -71,6 +73,10 @@ export function SaveSimulationPanel({
   const handleSave = async () => {
     if (auth && !auth.authenticated) {
       setError("Autentificarea este necesară pentru salvare.");
+      return;
+    }
+    if (auth?.user && !hasBetaAccess(auth.user)) {
+      setError(saveErrorMessage("account_pending_approval"));
       return;
     }
     setSaving(true);
@@ -106,7 +112,7 @@ export function SaveSimulationPanel({
         <div className="text-sm text-[var(--muted)]">
           Verific autentificarea…
         </div>
-      ) : auth.authenticated && auth.user ? (
+      ) : auth.authenticated && auth.user && betaAccess ? (
         <>
           <div className="flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
             <span>
@@ -149,12 +155,10 @@ export function SaveSimulationPanel({
         </>
       ) : (
         <div className="text-sm text-[var(--muted)]">
-          Salvarea simulărilor, istoricul firmei și exportul PDF sunt disponibile
-          după autentificare.{" "}
-          <a className="underline" href="/admin">
-            Intră în admin
-          </a>
-          .
+          {auth.authenticated && auth.user
+            ? `Contul este ${accountStatusLabel(auth.user.accountStatus).toLowerCase()}. Salvarea și exportul PDF se activează după aprobarea Super Admin.`
+            : "Salvarea simulărilor, istoricul firmei și exportul PDF sunt disponibile după autentificare."}{" "}
+          <a className="underline" href="/admin">Intră în admin</a>.
         </div>
       )}
 

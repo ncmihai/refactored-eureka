@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
       email: user.email ?? null,
       nume: user.nume ?? null,
       role: user.role ?? null,
+      accountStatus: user.accountStatus ?? null,
       firm: user.firm ?? null,
     },
   });
 }
-

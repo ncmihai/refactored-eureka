@@ -40,12 +40,12 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [ ] Smoke script producție: login test → save Credit → share → PDF; login test → save Optimizare → share → PDF.
 
 ### 1 — Commercial beta admin flow
-- [ ] Super Admin creează firma + primul Admin Firmă manual din Payload admin pentru beta inițial.
-- [ ] Admin Firmă poate propune/invita membri ai echipei din admin page.
-- [ ] Membrii invitați intră în status `pending_approval` până când Super Admin aprobă.
-- [ ] După aprobare, userul devine `consultant` sau `admin_firma` în firma respectivă.
-- [ ] UI admin: listă „Invitații în așteptare” pentru Super Admin, cu approve/reject.
-- [ ] Model flexibil pentru viitor: câmpuri `status`, `approvedBy`, `approvedAt`, `invitedBy`, fără a bloca schimbarea către auto-approval pe abonamente plătite.
+- [x] Super Admin creează firma + primul Admin Firmă manual din Payload admin pentru beta inițial.
+- [x] Admin Firmă poate propune/invita membri ai echipei din admin page.
+- [x] Membrii invitați intră în status `pending_approval` până când Super Admin aprobă.
+- [x] După aprobare, userul devine `consultant` sau `admin_firma` în firma respectivă.
+- [x] UI admin: listă „Invitații în așteptare” pentru Super Admin/Admin Firmă; approve/reject se face prin status în Users.
+- [x] Model flexibil pentru viitor: câmpuri `accountStatus`, `approvedBy`, `approvedAt`, `invitedBy`, fără a bloca schimbarea către auto-approval pe abonamente plătite.
 
 ### 2 — Trust layer
 - [ ] Audit log pentru acțiuni sensibile: user creat/aprobat, rol schimbat, firmă modificată, produs modificat, disclaimer modificat, PDF exportat.

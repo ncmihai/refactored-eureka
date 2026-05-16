@@ -34,6 +34,18 @@ const superAdmin: SimulariUserLike = {
   role: "super_admin",
   firm: null,
 };
+const pendingConsultantA: SimulariUserLike = {
+  id: 77,
+  role: "consultant",
+  accountStatus: "pending_approval",
+  firm: firmA,
+};
+const disabledAdminA: SimulariUserLike = {
+  id: 88,
+  role: "admin_firma",
+  accountStatus: "disabled",
+  firm: firmA,
+};
 
 const simA1: SimulariDocLike = { user: 11, firm: firmA };
 const simA2: SimulariDocLike = { user: 66, firm: firmA };
@@ -43,6 +55,8 @@ assert.equal(simulariReadWhereForUser(null), false, "guest read should be denied
 assert.deepEqual(simulariReadWhereForUser(consultantA), { user: { equals: 11 } });
 assert.deepEqual(simulariReadWhereForUser(adminA), { firm: { equals: 101 } });
 assert.equal(simulariReadWhereForUser(superAdmin), true);
+assert.equal(simulariReadWhereForUser(pendingConsultantA), false);
+assert.equal(simulariReadWhereForUser(disabledAdminA), false);
 
 assert.equal(canReadSimulation(simA1, consultantA), true, "consultant reads own simulation");
 assert.equal(canReadSimulation(simA2, consultantA), false, "consultant cannot read colleague simulation");
@@ -53,5 +67,7 @@ assert.equal(canReadSimulation(simB1, consultantA), false, "consultant cannot re
 assert.equal(canReadSimulation(simB1, consultantB), true, "second consultant reads own simulation");
 assert.equal(canReadSimulation(simA1, superAdmin), true, "super admin reads all");
 assert.equal(canReadSimulation(simB1, superAdmin), true, "super admin reads all firms");
+assert.equal(canReadSimulation(simA1, pendingConsultantA), false, "pending consultant cannot read simulations");
+assert.equal(canReadSimulation(simA2, disabledAdminA), false, "disabled firm admin cannot read firm simulations");
 
 console.log("simulari access checks passed");

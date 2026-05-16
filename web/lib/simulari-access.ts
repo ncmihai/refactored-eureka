@@ -1,6 +1,7 @@
 import type { Where } from "payload";
 
 export type SimulariRole = "super_admin" | "admin_firma" | "consultant";
+export type AccountStatus = "active" | "pending_approval" | "rejected" | "disabled";
 
 export type RelationRef =
   | string
@@ -12,6 +13,7 @@ export type RelationRef =
 export type SimulariUserLike = {
   id?: string | number | null;
   role?: SimulariRole | null;
+  accountStatus?: AccountStatus | null;
   firm?: RelationRef;
 } | null | undefined;
 
@@ -29,6 +31,7 @@ export function relationId(value: RelationRef): string | number | undefined {
 export function simulariReadWhereForUser(user: SimulariUserLike): Where | true | false {
   if (!user?.id) return false;
   if (user.role === "super_admin") return true;
+  if (user.accountStatus && user.accountStatus !== "active") return false;
 
   const firmId = relationId(user.firm);
   if (user.role === "admin_firma" && firmId) {
@@ -41,6 +44,7 @@ export function simulariReadWhereForUser(user: SimulariUserLike): Where | true |
 export function canReadSimulation(doc: SimulariDocLike, user: SimulariUserLike) {
   if (!doc || !user?.id) return false;
   if (user.role === "super_admin") return true;
+  if (user.accountStatus && user.accountStatus !== "active") return false;
   if (user.role === "admin_firma") {
     const firmId = relationId(user.firm);
     return Boolean(firmId && String(firmId) === String(relationId(doc.firm)));

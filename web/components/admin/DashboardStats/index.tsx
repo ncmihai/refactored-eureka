@@ -34,7 +34,9 @@
  */
 
 import config from "@payload-config";
+import { headers } from "next/headers";
 import { getPayload } from "payload";
+import { relationId } from "@/lib/simulari-access";
 import { fetchAdminStats, type AdminStats } from "../../../lib/posthog-server";
 
 import "./styles.scss";
@@ -230,6 +232,23 @@ function ToolBreakdown({ byTool }: { byTool: AdminStats["byTool"] }) {
   );
 }
 
+type AdminUserLike = {
+  id?: string | number | null;
+  role?: "super_admin" | "admin_firma" | "consultant" | null;
+  firm?: string | number | { id?: string | number | null; nume?: string | null } | null;
+} | null;
+
+type PendingApprovalStats = {
+  visible: boolean;
+  total: number;
+  docs: Array<{
+    id: string | number;
+    email: string;
+    role: string;
+    firm: string;
+  }>;
+};
+
 async function fetchSavedSimulationStats() {
   try {
     const payload = await getPayload({ config });
@@ -271,6 +290,67 @@ async function fetchSavedSimulationStats() {
   }
 }
 
+async function fetchCurrentAdminUser() {
+  try {
+    const payload = await getPayload({ config });
+    const auth = await payload.auth({ headers: await headers() });
+    return auth.user as AdminUserLike;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPendingApprovals(user: AdminUserLike): Promise<PendingApprovalStats> {
+  if (!user || (user.role !== "super_admin" && user.role !== "admin_firma")) {
+    return { visible: false, total: 0, docs: [] };
+  }
+
+  const firmId = relationId(user.firm);
+  if (user.role === "admin_firma" && !firmId) {
+    return { visible: true, total: 0, docs: [] };
+  }
+
+  try {
+    const payload = await getPayload({ config });
+    const result = await payload.find({
+      collection: "users",
+      where:
+        user.role === "super_admin"
+          ? { accountStatus: { equals: "pending_approval" } }
+          : {
+              and: [
+                { accountStatus: { equals: "pending_approval" } },
+                { firm: { equals: firmId } },
+              ],
+            },
+      sort: "-createdAt",
+      depth: 1,
+      limit: 8,
+      overrideAccess: true,
+    });
+
+    return {
+      visible: true,
+      total: result.totalDocs,
+      docs: result.docs.map((doc) => {
+        const firm = doc.firm;
+        const firmName =
+          firm && typeof firm === "object" && "nume" in firm
+            ? String(firm.nume ?? "-")
+            : String(firm ?? "-");
+        return {
+          id: doc.id,
+          email: String(doc.email ?? "-"),
+          role: String(doc.role ?? "-"),
+          firm: firmName,
+        };
+      }),
+    };
+  } catch {
+    return { visible: true, total: 0, docs: [] };
+  }
+}
+
 /**
  * Main widget export — registered in payload.config.ts via
  * `admin.components.beforeDashboard`.
@@ -279,9 +359,11 @@ async function fetchSavedSimulationStats() {
  * needed from Payload — we grab everything from env + PostHog directly.
  */
 export default async function DashboardStats() {
-  const [stats, savedStats] = await Promise.all([
+  const currentUser = await fetchCurrentAdminUser();
+  const [stats, savedStats, pendingApprovals] = await Promise.all([
     fetchAdminStats(),
     fetchSavedSimulationStats(),
+    fetchPendingApprovals(currentUser),
   ]);
 
   return (
@@ -346,6 +428,35 @@ export default async function DashboardStats() {
           )}
         </div>
       </div>
+
+      {pendingApprovals.visible && (
+        <div className="ds-approvals">
+          <div className="ds-approvals__header">
+            <div>
+              <div className="ds-approvals__title">Aprobări utilizatori</div>
+              <div className="ds-approvals__hint">
+                {currentUser?.role === "super_admin"
+                  ? "Activează sau respinge membrii propuși de firme."
+                  : "Membrii propuși de firma ta așteaptă aprobarea Super Admin."}
+              </div>
+            </div>
+            <span className="ds-approvals__badge">{fmt(pendingApprovals.total)} în așteptare</span>
+          </div>
+          {pendingApprovals.docs.length === 0 ? (
+            <div className="ds-approvals__empty">Nu există utilizatori în așteptare.</div>
+          ) : (
+            <div className="ds-approvals__list">
+              {pendingApprovals.docs.map((item) => (
+                <a key={item.id} className="ds-approvals__item" href={`/admin/collections/users/${item.id}`}>
+                  <span>{item.email}</span>
+                  <strong>{item.role}</strong>
+                  <em>{item.firm}</em>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

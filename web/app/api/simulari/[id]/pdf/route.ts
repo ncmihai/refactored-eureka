@@ -15,6 +15,9 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
+  if (user.role !== "super_admin" && user.accountStatus && user.accountStatus !== "active") {
+    return NextResponse.json({ error: "account_pending_approval" }, { status: 403 });
+  }
 
   const doc = await payload.findByID({
     collection: "simulari",
