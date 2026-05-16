@@ -8,6 +8,9 @@ export type SimulareDoc = {
   inputSnapshot: unknown;
   outputSummary: unknown;
   productSnapshots?: unknown;
+  assumptionsSnapshot?: unknown;
+  disclaimerSnapshot?: unknown;
+  sourceSnapshot?: unknown;
   shareId: string;
   shareExpiresAt: string;
   status: "active" | "archived";
@@ -24,6 +27,9 @@ export async function saveSimulation(input: {
   inputSnapshot: unknown;
   outputSummary: unknown;
   productSnapshots?: unknown;
+  assumptionsSnapshot?: unknown;
+  disclaimerSnapshot?: unknown;
+  sourceSnapshot?: unknown;
 }): Promise<SimulareDoc> {
   const res = await fetch("/api/simulari", {
     method: "POST",

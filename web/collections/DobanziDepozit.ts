@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const DobanziDepozit: CollectionConfig = {
   slug: 'dobanzi-depozit',
@@ -15,6 +16,9 @@ export const DobanziDepozit: CollectionConfig = {
     defaultColumns: ['banca', 'moneda', 'scadentaLuni', 'dobandaBruta', 'activ'],
     description: 'Dobânzi depozit bancar per bancă, monedă și scadență.',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('dobanzi-depozit', 'market_data')],
   },
   fields: [
     {

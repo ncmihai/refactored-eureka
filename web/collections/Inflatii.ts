@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const Inflatii: CollectionConfig = {
   slug: 'inflatii',
@@ -13,6 +14,9 @@ export const Inflatii: CollectionConfig = {
     defaultColumns: ['moneda', 'an', 'rata', 'activ'],
     description: 'Rate de inflație anuale per monedă (pentru toggle nominal ↔ real).',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('inflatii', 'market_data')],
   },
   fields: [
     {

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const ProduseUL: CollectionConfig = {
   slug: 'produse-ul',
@@ -15,6 +16,9 @@ export const ProduseUL: CollectionConfig = {
     defaultColumns: ['nume', 'provider', 'moneda', 'adminFeeAnnual', 'activ'],
     description: 'Produse Unit-Linked parametrizate pentru simulator și comparator.',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('produse-ul', 'market_data')],
   },
   fields: [
     { name: 'nume', type: 'text', required: true },

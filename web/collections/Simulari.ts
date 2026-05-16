@@ -83,6 +83,27 @@ export const Simulari: CollectionConfig = {
     { name: 'outputSummary', type: 'json', required: true },
     { name: 'productSnapshots', type: 'json' },
     {
+      name: 'assumptionsSnapshot',
+      type: 'json',
+      admin: {
+        description: 'Ipoteze explicite salvate odată cu simularea pentru share/PDF.',
+      },
+    },
+    {
+      name: 'disclaimerSnapshot',
+      type: 'json',
+      admin: {
+        description: 'Versiunea disclaimerului activ la momentul salvării.',
+      },
+    },
+    {
+      name: 'sourceSnapshot',
+      type: 'json',
+      admin: {
+        description: 'Surse/freshness pentru produse, curs valutar, inflație și dataseturi.',
+      },
+    },
+    {
       name: 'firm',
       type: 'relationship',
       relationTo: 'firme',

@@ -1,10 +1,17 @@
 import config from "@payload-config";
 import { randomBytes } from "crypto";
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getPayload } from "payload";
 import { relationId, simulariReadWhereForUser, type SimulariUserLike } from "@/lib/simulari-access";
+import {
+  buildAssumptionsSnapshot,
+  buildDisclaimerSnapshot,
+  buildSourceSnapshot,
+  type TrustTool,
+} from "@/lib/trust-snapshots";
 
-const TOOLS = new Set([
+const TOOLS = new Set<TrustTool>([
   "credit",
   "optimizare",
   "depozit",
@@ -34,6 +41,16 @@ export async function GET(req: NextRequest) {
 
   const readWhere = simulariReadWhereForUser(user);
   const where = readWhere === true ? undefined : readWhere === false ? { id: { equals: "__none__" } } : readWhere;
+  Sentry.addBreadcrumb({
+    category: "simulari",
+    message: "list saved simulations",
+    level: "info",
+    data: {
+      role: user.role,
+      accountStatus: user.accountStatus ?? "active",
+      scoped: readWhere !== true,
+    },
+  });
 
   const result = await payload.find({
     collection: "simulari",
@@ -57,12 +74,24 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  if (!TOOLS.has(body.tool)) {
+  const tool = String(body.tool) as TrustTool;
+  if (!TOOLS.has(tool)) {
     return NextResponse.json({ error: "invalid_tool" }, { status: 400 });
   }
   if (!body.inputSnapshot || !body.outputSummary) {
     return NextResponse.json({ error: "missing_snapshot" }, { status: 400 });
   }
+  Sentry.addBreadcrumb({
+    category: "simulari",
+    message: "create saved simulation",
+    level: "info",
+    data: {
+      tool,
+      role: user.role,
+      accountStatus: user.accountStatus ?? "active",
+      hasFirm: Boolean(relationId(user.firm)),
+    },
+  });
 
   const expires = new Date();
   expires.setDate(expires.getDate() + 90);
@@ -70,7 +99,13 @@ export async function POST(req: NextRequest) {
   const doc = await payload.create({
     collection: "simulari",
     data: {
-      tool: body.tool,
+      tool,
+      assumptionsSnapshot:
+        body.assumptionsSnapshot ?? buildAssumptionsSnapshot(tool, body.inputSnapshot),
+      disclaimerSnapshot:
+        body.disclaimerSnapshot ?? (await buildDisclaimerSnapshot(payload, tool)),
+      sourceSnapshot:
+        body.sourceSnapshot ?? buildSourceSnapshot(body.inputSnapshot, body.productSnapshots ?? null),
       clientAlias: body.clientAlias || "Client demo",
       inputSnapshot: body.inputSnapshot,
       outputSummary: body.outputSummary,

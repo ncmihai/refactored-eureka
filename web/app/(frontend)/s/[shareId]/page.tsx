@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { notFound } from "next/navigation";
 import { getPayload } from "payload";
 import { CreditReport, OptimizareReport } from "@/components/reports/SavedSimulationReports";
+import { TrustSnapshotPanel } from "@/components/reports/TrustSnapshotPanel";
 import { PageHeader } from "@/components/ui";
 import {
   compactDate,
@@ -67,6 +68,8 @@ export default async function SharedSimulationPage({
           Raportul public detaliat este disponibil momentan pentru Credit și Optimizare.
         </div>
       )}
+
+      <TrustSnapshotPanel doc={doc} />
 
       <p className="text-xs text-[var(--muted)] italic leading-relaxed">
         Acest raport este educațional și nu constituie consultanță financiară, fiscală sau de investiții.

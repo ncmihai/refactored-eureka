@@ -4,6 +4,23 @@ Jurnal cronologic al pașilor concreți făcuți pe proiect. Entry-urile nu se �
 
 ---
 
+## 2026-05-16 — Trust layer snapshots v1
+
+### Implementat
+- `Simulari` salvează snapshot-uri separate pentru ipoteze, disclaimer activ și surse/freshness la momentul salvării.
+- Adăugat colecția Payload `Audit Logs`, vizibilă doar pentru Super Admin.
+- Log pentru user creat/aprobat/respins/dezactivat, schimbare rol/firmă, firmă modificată, market-data modificat, disclaimer modificat și PDF exportat.
+- `/api/simulari` generează automat aceste snapshot-uri pentru simulările noi, fără să schimbe flow-ul public al calculatoarelor.
+- Share page-ul public afișează un bloc `Trust layer` cu ipoteze, versiunea disclaimerului capturat și sursele produselor/datelor.
+- PDF-urile Credit și Optimizare includ metadata de disclaimer/surse pe prima pagină și o pagină dedicată pentru ipoteze, disclaimer și surse.
+- Adăugat breadcrumbs Sentry pentru save/list simulări, export PDF și endpointul Monte Carlo.
+- Adăugat migration SQL repo-tracked: `web/scripts/migrations/2026-05-16-simulari-trust-layer.sql` și `web/scripts/migrations/2026-05-16-audit-logs.sql`.
+
+### Rămas
+- Breadcrumbs Sentry pentru scripturile de import indici.
+
+---
+
 ## 2026-05-16 — Commercial beta admin flow v1
 
 ### Implementat

@@ -2,6 +2,7 @@ import {
   fmt,
   pct,
   relationLabel,
+  trustMetadataLine,
   type SavedSimulationReport,
 } from "../report-data";
 import { buildCreditReportModel } from "../report-view-models";
@@ -13,6 +14,7 @@ import {
   drawSchedulePages,
   drawSectionTitle,
   drawStat,
+  drawTrustSnapshotPage,
 } from "./primitives";
 
 export function drawCreditReport(pdf: PdfCanvas, doc: SavedSimulationReport, hash: string) {
@@ -63,8 +65,9 @@ export function drawCreditReport(pdf: PdfCanvas, doc: SavedSimulationReport, has
 
   drawCreditChart(pdf, schedule, M, 486, PAGE_W - M * 2, 248);
 
-  pdf.text(M, 760, `Share ID: ${doc.shareId ?? "-"}`, 8, { color: MUTED });
-  pdf.text(M, 774, `Hash input/output: ${hash}`, 7, { color: MUTED });
+  pdf.text(M, 748, `Share ID: ${doc.shareId ?? "-"}`, 8, { color: MUTED });
+  pdf.text(M, 762, `Hash input/output: ${hash}`, 7, { color: MUTED });
+  pdf.text(M, 776, trustMetadataLine(doc), 7, { color: MUTED });
   pdf.wrappedText(
     M,
     792,
@@ -75,4 +78,5 @@ export function drawCreditReport(pdf: PdfCanvas, doc: SavedSimulationReport, has
   );
 
   drawSchedulePages(pdf, schedule);
+  drawTrustSnapshotPage(pdf, doc);
 }

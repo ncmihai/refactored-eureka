@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+import sentry_sdk
 from fastapi import APIRouter
 from pydantic import Field, field_validator, model_validator
 
@@ -142,5 +143,17 @@ def simulate(req: InvestitieRequest) -> InvestitieResponse:
 
 @router.post("/monte-carlo", response_model=MonteCarloResponse)
 def simulate_monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
+    sentry_sdk.add_breadcrumb(
+        category="investitii.monte_carlo",
+        message="simulate monte carlo",
+        level="info",
+        data={
+            "months": req.months,
+            "iterations": req.iterations,
+            "block_size": req.block_size,
+            "history_months": len(req.monthly_returns),
+            "has_target": req.target_value is not None,
+        },
+    )
     result = simulate_investitie_monte_carlo(MonteCarloInput(**req.model_dump()))
     return MonteCarloResponse.model_validate(result)

@@ -2,6 +2,7 @@ import {
   fmt,
   pct,
   relationLabel,
+  trustMetadataLine,
   type SavedSimulationReport,
 } from "../report-data";
 import { buildOptimizareReportModel } from "../report-view-models";
@@ -13,6 +14,7 @@ import {
   drawOptimizareYearlyPages,
   drawSectionTitle,
   drawStat,
+  drawTrustSnapshotPage,
 } from "./primitives";
 
 export function drawOptimizareReport(pdf: PdfCanvas, doc: SavedSimulationReport, hash: string) {
@@ -64,8 +66,9 @@ export function drawOptimizareReport(pdf: PdfCanvas, doc: SavedSimulationReport,
 
   drawOptimizareChart(pdf, yearly, output.crossover_year, M, 606, PAGE_W - M * 2, 146);
 
-  pdf.text(M, 768, `Share ID: ${doc.shareId ?? "-"}`, 8, { color: MUTED });
-  pdf.text(M, 782, `Hash input/output: ${hash}`, 7, { color: MUTED });
+  pdf.text(M, 756, `Share ID: ${doc.shareId ?? "-"}`, 8, { color: MUTED });
+  pdf.text(M, 770, `Hash input/output: ${hash}`, 7, { color: MUTED });
+  pdf.text(M, 784, trustMetadataLine(doc), 7, { color: MUTED });
   pdf.wrappedText(
     M,
     800,
@@ -76,4 +79,5 @@ export function drawOptimizareReport(pdf: PdfCanvas, doc: SavedSimulationReport,
   );
 
   drawOptimizareYearlyPages(pdf, yearly);
+  drawTrustSnapshotPage(pdf, doc);
 }

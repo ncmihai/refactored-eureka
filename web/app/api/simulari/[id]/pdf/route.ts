@@ -1,6 +1,8 @@
 import config from "@payload-config";
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { getPayload } from "payload";
+import { auditPdfExport } from "@/lib/audit-log";
 import { buildSimulationPdf } from "@/lib/pdf";
 import { canReadSimulation, type SimulariUserLike } from "@/lib/simulari-access";
 
@@ -39,6 +41,16 @@ export async function GET(
   if (!["credit", "optimizare"].includes(String(simulation.tool))) {
     return NextResponse.json({ error: "pdf_not_available" }, { status: 400 });
   }
+  Sentry.addBreadcrumb({
+    category: "simulari.pdf",
+    message: "export saved simulation pdf",
+    level: "info",
+    data: {
+      tool: simulation.tool,
+      role: user.role,
+      accountStatus: user.accountStatus ?? "active",
+    },
+  });
 
   const { buffer, hash } = buildSimulationPdf(doc as never);
   await payload.update({
@@ -50,6 +62,11 @@ export async function GET(
       pdfVersion: "v1-credit-optimizare",
     },
     overrideAccess: true,
+  });
+  await auditPdfExport(payload, user, {
+    documentId: id,
+    tool: String(simulation.tool),
+    hash,
   });
 
   return new NextResponse(buffer, {

@@ -36,7 +36,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [/] Audit redundanță backend: contracte output comune, metrici reutilizabile, mapping input pentru tools.
 - [/] Consolidare tipuri raport/simulare: un singur layer shared pentru Credit/Optimizare/Invest/UL unde e realist.
 - [/] Curățare feature flags / TODO vechi / debug scripts temporare; păstrare doar scripts utile (`check:simulari-access`, importuri date).
-- [ ] Decide folder standard pentru migrations (`web/scripts/migrations`) și regulă: orice hotfix Neon manual intră în repo în aceeași zi.
+- [x] Decide folder standard pentru migrations (`web/scripts/migrations`) și regulă: orice hotfix Neon manual intră în repo în aceeași zi.
 - [ ] Smoke script producție: login test → save Credit → share → PDF; login test → save Optimizare → share → PDF.
 
 ### 1 — Commercial beta admin flow
@@ -48,11 +48,11 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Model flexibil pentru viitor: câmpuri `accountStatus`, `approvedBy`, `approvedAt`, `invitedBy`, fără a bloca schimbarea către auto-approval pe abonamente plătite.
 
 ### 2 — Trust layer
-- [ ] Audit log pentru acțiuni sensibile: user creat/aprobat, rol schimbat, firmă modificată, produs modificat, disclaimer modificat, PDF exportat.
-- [ ] Disclaimer version pe fiecare simulare/PDF, nu doar text curent.
-- [ ] Source/freshness badges pe date: produs, FX, inflație, indice istoric, proxy/licență.
-- [ ] Bloc „Assumptions” salvat în snapshot și afișat pe share page/PDF.
-- [ ] Sentry breadcrumbs pe `/api/simulari`, `/api/simulari/[id]/pdf`, importuri indici, Monte Carlo.
+- [x] Audit log pentru acțiuni sensibile: user creat/aprobat, rol schimbat, firmă modificată, produs modificat, disclaimer modificat, PDF exportat.
+- [x] Disclaimer version pe fiecare simulare/PDF, nu doar text curent.
+- [x] Source/freshness badges pe date: produs, FX, inflație, indice istoric, proxy/licență.
+- [x] Bloc „Assumptions” salvat în snapshot și afișat pe share page/PDF.
+- [/] Sentry breadcrumbs pe `/api/simulari`, `/api/simulari/[id]/pdf`, importuri indici, Monte Carlo.
 
 ### 3 — Invest & Monte Carlo sub-tool
 - [ ] Rework Invest ca pagină principală deterministă: selectare tip investiție (`ETF`, `UL`, ulterior alte forme), produs/dataset, contribuție lunară, durată, taxe.
@@ -65,7 +65,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 ### 4 — Reports brainstorm backlog
 - [ ] PDF Credit v2: oglindește pagina curentă — parametri, info blocks, grafic, scadențar complet, notes consultant.
 - [ ] PDF Optimizare v2: include explicație decizională mai clară, assumptions, chart/table parity cu web.
-- [ ] Share pages: mod client-friendly + consultant notes + „generated at / hash / disclaimer version”.
+- [/] Share pages: mod client-friendly + consultant notes + „generated at / hash / disclaimer version”.
 - [ ] Export templates versionate (`pdfVersion`) cu changelog intern.
 - [ ] Manual QA PDF: 120/360 luni, mobile share page, dark/light screenshots.
 

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const CursuriValutare: CollectionConfig = {
   slug: 'cursuri-valutare',
@@ -10,6 +11,9 @@ export const CursuriValutare: CollectionConfig = {
     defaultColumns: ['pereche', 'data', 'curs'],
     description: 'Cursuri valutare EUR/RON, USD/RON (istorice + live).',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('cursuri-valutare', 'market_data')],
   },
   fields: [
     {

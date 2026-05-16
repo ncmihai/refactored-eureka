@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const IndiciIstorici: CollectionConfig = {
   slug: 'indici-istorici',
@@ -15,6 +16,9 @@ export const IndiciIstorici: CollectionConfig = {
     defaultColumns: ['indice', 'data', 'randamentLunar', 'moneda', 'sursa'],
     description: 'Randamente lunare istorice pentru Monte Carlo historical bootstrap.',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('indici-istorici', 'market_data')],
   },
   fields: [
     {

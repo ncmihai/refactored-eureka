@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const Disclaimere: CollectionConfig = {
   slug: 'disclaimere',
@@ -14,6 +15,9 @@ export const Disclaimere: CollectionConfig = {
     description:
       'Disclaimere versionate per modul (Credit, Optimizare, Depozit etc.) — afișate în UI și în PDF.',
     group: 'Conținut',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('disclaimere', 'disclaimer')],
   },
   fields: [
     {

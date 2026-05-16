@@ -1,4 +1,14 @@
-import { fmt, num, type AmortizationRow, type OptimizareYearPoint } from "../report-data";
+import {
+  compactDate,
+  fmt,
+  getTrustAssumptions,
+  getTrustDisclaimer,
+  getTrustSources,
+  num,
+  type AmortizationRow,
+  type OptimizareYearPoint,
+  type SavedSimulationReport,
+} from "../report-data";
 import { PdfCanvas } from "./canvas";
 import { AMBER, BORDER, BRAND, INK, M, MUTED, PAGE_W, SOFT } from "./constants";
 
@@ -250,4 +260,56 @@ export function drawOptimizareYearlyPages(pdf: PdfCanvas, yearly: OptimizareYear
 
     index += rowsPerPage;
   }
+}
+
+export function drawTrustSnapshotPage(pdf: PdfCanvas, doc: SavedSimulationReport) {
+  const assumptions = getTrustAssumptions(doc);
+  const disclaimer = getTrustDisclaimer(doc);
+  const sources = getTrustSources(doc);
+  const sourceEntries = sources?.entries ?? [];
+
+  if (!assumptions?.items?.length && !disclaimer && !sourceEntries.length) return;
+
+  pdf.addPage();
+  pdf.text(M, 58, "Ipoteze, disclaimer si surse", 20, { bold: true });
+  pdf.text(M, 78, "Metadate capturate la momentul salvarii simularii.", 9, { color: MUTED });
+
+  drawSectionTitle(pdf, "Ipoteze", 112);
+  let y = 138;
+  if (assumptions?.items?.length) {
+    assumptions.items.slice(0, 8).forEach((item) => {
+      pdf.wrappedText(M + 10, y, `- ${item}`, 9, PAGE_W - M * 2 - 10, { color: INK, lineHeight: 12 });
+      y += 26;
+    });
+    pdf.text(M, y + 2, `Versiune ${assumptions.version ?? "-"} · ${compactDate(assumptions.generatedAt)}`, 7.5, {
+      color: MUTED,
+    });
+  } else {
+    pdf.text(M, y, "Nu exista ipoteze capturate in snapshot.", 9, { color: MUTED });
+  }
+
+  drawSectionTitle(pdf, "Disclaimer capturat", 350);
+  pdf.text(M, 378, disclaimer?.nume ?? "Disclaimer indisponibil", 10, { bold: true, color: INK });
+  pdf.text(
+    M,
+    396,
+    `Modul ${disclaimer?.modul ?? "-"} · versiune ${disclaimer?.versiune ?? disclaimer?.version ?? "-"} · capturat ${compactDate(disclaimer?.capturedAt)}`,
+    8,
+    { color: MUTED },
+  );
+
+  drawSectionTitle(pdf, "Surse si freshness", 442);
+  if (!sourceEntries.length) {
+    pdf.text(M, 468, "Nu exista surse capturate in snapshot.", 9, { color: MUTED });
+    return;
+  }
+
+  sourceEntries.slice(0, 12).forEach((entry, index) => {
+    const yy = 468 + index * 28;
+    pdf.text(M, yy, `${entry.type ?? "sursa"} · ${entry.label ?? "Sursa"}`, 8.5, { bold: true, color: INK });
+    pdf.wrappedText(M, yy + 12, entry.source ?? entry.url ?? "-", 7.5, PAGE_W - M * 2, {
+      color: MUTED,
+      lineHeight: 9,
+    });
+  });
 }

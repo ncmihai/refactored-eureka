@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const FonduriETF: CollectionConfig = {
   slug: 'fonduri-etf',
@@ -15,6 +16,9 @@ export const FonduriETF: CollectionConfig = {
     defaultColumns: ['ticker', 'nume', 'provider', 'moneda', 'ter', 'indiceReferinta', 'activ'],
     description: 'Fonduri ETF folosite în simulatorul ETF și viitorul comparator investițional.',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('fonduri-etf', 'market_data')],
   },
   fields: [
     {

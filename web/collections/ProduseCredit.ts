@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const ProduseCredit: CollectionConfig = {
   slug: 'produse-credit',
@@ -15,6 +16,9 @@ export const ProduseCredit: CollectionConfig = {
     defaultColumns: ['nume', 'banca', 'tipDobanda', 'dobandaInitiala', 'activ'],
     description: 'Produse de creditare bancare — folosite în Simulator Credit & Optimizare.',
     group: 'Date Piață',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('produse-credit', 'market_data')],
   },
   fields: [
     { name: 'nume', type: 'text', required: true, admin: { description: 'Ex: "Prima Casă 5 ani fix"' } },

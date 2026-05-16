@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { auditCollectionChange } from '../lib/audit-log'
 
 export const Firme: CollectionConfig = {
   slug: 'firme',
@@ -7,6 +8,9 @@ export const Firme: CollectionConfig = {
     defaultColumns: ['nume', 'slug', 'activ'],
     description: 'Firme de consultanță financiară (B2B tenants). Fiecare firmă are propriul branding pentru PDF-uri white-label.',
     group: 'Cont & Acces',
+  },
+  hooks: {
+    afterChange: [auditCollectionChange('firme', 'firm')],
   },
   fields: [
     { name: 'nume', type: 'text', required: true },

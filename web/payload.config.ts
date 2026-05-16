@@ -5,6 +5,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { AuditLogs } from './collections/AuditLogs'
 import { CursuriValutare } from './collections/CursuriValutare'
 import { Disclaimere } from './collections/Disclaimere'
 import { DobanziDepozit } from './collections/DobanziDepozit'
@@ -59,6 +60,7 @@ export default buildConfig({
   collections: [
     Users,
     Firme,
+    AuditLogs,
     Media,
     ProduseCredit,
     ProduseUL,

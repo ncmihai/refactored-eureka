@@ -1,4 +1,5 @@
 import type { Access, CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import { userAuditHook } from '../lib/audit-log'
 import { relationId } from '../lib/simulari-access'
 
 type AppUser = {
@@ -85,6 +86,7 @@ export const Users: CollectionConfig = {
   auth: true,
   hooks: {
     beforeChange: [enforceBetaApprovalFlow],
+    afterChange: [userAuditHook],
   },
   fields: [
     {
