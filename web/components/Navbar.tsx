@@ -42,10 +42,7 @@ const tools = [
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [auth, setAuth] = useState<AuthStatus>({
-    authenticated: false,
-    user: null,
-  });
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const anyActive = tools.some((t) => pathname?.startsWith(t.href));
 
@@ -88,7 +85,12 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {auth.authenticated && auth.user ? (
+          {auth === null ? (
+            <span
+              className="hidden sm:inline-flex h-8 w-32 rounded-md bg-[var(--accent-soft)] animate-pulse"
+              aria-label="Se verifică sesiunea"
+            />
+          ) : auth.authenticated && auth.user ? (
             <>
               <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
                 <span className="max-w-[140px] truncate">
@@ -163,7 +165,11 @@ export function Navbar() {
                 <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
                   Workspace
                 </div>
-                {auth.authenticated && auth.user ? (
+                {auth === null ? (
+                  <div className="px-3 py-2.5 text-sm text-[var(--muted)]">
+                    Se verifică sesiunea...
+                  </div>
+                ) : auth.authenticated && auth.user ? (
                   <>
                     <Link
                       href="/simulari"

@@ -16,7 +16,11 @@
  *     --file ./data/sp500-monthly.csv \
  *     --indice SP500 \
  *     --moneda USD \
+ *     --target staging \
  *     --source-url https://example.com/dataset
+ *
+ * Production guard:
+ *   npm run import:index-returns -- ... --target production --confirm-production
  */
 
 import 'dotenv/config'
@@ -38,17 +42,20 @@ const INDEX_LABELS: Record<string, string> = {
 
 type Args = {
   batch?: string
+  confirmProduction: boolean
   file?: string
   format: 'decimal' | 'percent'
   indice?: keyof typeof INDEX_LABELS
   moneda: 'EUR' | 'RON' | 'USD'
   source: 'csv' | 'manual' | 'yfinance' | 'licensed_feed'
   sourceUrl?: string
+  target?: 'local' | 'staging' | 'production'
   update: boolean
 }
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
+    confirmProduction: false,
     format: 'percent',
     moneda: 'USD',
     source: 'csv',
@@ -64,6 +71,11 @@ function parseArgs(argv: string[]): Args {
       continue
     }
 
+    if (arg === '--confirm-production') {
+      args.confirmProduction = true
+      continue
+    }
+
     if (!next) {
       throw new Error(`Missing value for ${arg}`)
     }
@@ -75,6 +87,7 @@ function parseArgs(argv: string[]): Args {
     else if (arg === '--source-url') args.sourceUrl = next
     else if (arg === '--format') args.format = next as Args['format']
     else if (arg === '--batch') args.batch = next
+    else if (arg === '--target') args.target = next as Args['target']
     else throw new Error(`Unknown argument: ${arg}`)
 
     i++
@@ -90,8 +103,39 @@ function parseArgs(argv: string[]): Args {
   if (!['percent', 'decimal'].includes(args.format)) {
     throw new Error(`Unknown --format: ${args.format}`)
   }
+  if (!args.target) {
+    const envTarget = process.env.INDEX_IMPORT_TARGET
+    if (envTarget === 'local' || envTarget === 'staging' || envTarget === 'production') {
+      args.target = envTarget
+    }
+  }
+  if (!args.target) {
+    throw new Error('Missing required --target local|staging|production')
+  }
+  if (!['local', 'staging', 'production'].includes(args.target)) {
+    throw new Error(`Unknown --target: ${args.target}`)
+  }
+  if (args.target === 'production' && !args.confirmProduction) {
+    throw new Error('Production import requires --confirm-production')
+  }
 
   return args
+}
+
+function databaseIdentity() {
+  const raw = process.env.DATABASE_URI ?? process.env.DATABASE_URL
+  if (!raw) throw new Error('DATABASE_URI/DATABASE_URL is not set')
+
+  try {
+    const url = new URL(raw)
+    return {
+      host: url.hostname,
+      database: url.pathname.replace(/^\//, '') || 'unknown',
+      sslMode: url.searchParams.get('sslmode') ?? url.searchParams.get('ssl') ?? 'not-set',
+    }
+  } catch {
+    throw new Error('DATABASE_URI/DATABASE_URL is not a valid URL')
+  }
 }
 
 function parseCsvLine(line: string): string[] {
@@ -166,6 +210,10 @@ async function main() {
   const indice = args.indice
 
   if (!file || !indice) throw new Error('Missing required --file or --indice')
+  const db = databaseIdentity()
+  console.log(
+    `Import target=${args.target} host=${db.host} database=${db.database} ssl=${db.sslMode}`,
+  )
 
   const csv = readFileSync(file, 'utf8')
   const checksum = createHash('sha256').update(csv).digest('hex')

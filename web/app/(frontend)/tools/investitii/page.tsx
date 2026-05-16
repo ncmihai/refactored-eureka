@@ -621,7 +621,7 @@ export default function InvestitiiETF() {
             options={(
               availableIndices.length > 0
                 ? availableIndices
-                : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600", "BET"] as const)
+                : (["SP500", "MSCI_WORLD", "FTSE_ALL_WORLD", "STOXX_600"] as const)
             ).map((indice) => ({
               value: indice,
               label: `${metadataForIndice(indice, indexReturns)?.label ?? INDEX_LABELS[indice]}${

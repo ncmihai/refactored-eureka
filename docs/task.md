@@ -62,6 +62,12 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Copy consultant: scopul este reducerea anxietății prin context istoric și distribuții, fără afirmații garantate de tip „vei face bani”.
 - [ ] PDF export pentru investiții rămâne blocat pentru proxy-uri nelicențiate până la matricea de licențiere.
 
+### 3.1 — DB/import guardrails
+- [x] Script `db:whoami` pentru identificare sigură host DB, count-uri cheie și range dataseturi istorice.
+- [x] Guardrail import indici: `import:index-returns` cere `--target local|staging|production`; producția cere și `--confirm-production`.
+- [x] Document operațional `docs/db-operations.md` pentru diferența local/staging/producție și importuri istorice.
+- [x] BET ascuns din fallback-ul Monte Carlo până există CSV/dataset activ.
+
 ### 4 — Reports brainstorm backlog
 - [ ] PDF Credit v2: oglindește pagina curentă — parametri, info blocks, grafic, scadențar complet, notes consultant.
 - [ ] PDF Optimizare v2: include explicație decizională mai clară, assumptions, chart/table parity cu web.
