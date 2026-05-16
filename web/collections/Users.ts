@@ -42,14 +42,24 @@ const enforceBetaApprovalFlow: CollectionBeforeChangeHook = ({ data, operation, 
 
   if (user.role === 'admin_firma') {
     const firmId = relationId(user.firm)
+    if (operation === 'update') {
+      return {
+        ...data,
+        firm: originalDoc?.firm ?? firmId,
+        role: originalDoc?.role ?? 'consultant',
+        accountStatus: originalDoc?.accountStatus ?? 'pending_approval',
+        invitedBy: originalDoc?.invitedBy,
+        approvedBy: originalDoc?.approvedBy,
+        approvedAt: originalDoc?.approvedAt,
+      }
+    }
+
     return {
       ...data,
       firm: firmId,
       role: data.role === 'admin_firma' ? 'admin_firma' : 'consultant',
-      accountStatus: operation === 'create' ? 'pending_approval' : originalDoc?.accountStatus,
-      invitedBy: operation === 'create' ? user.id : originalDoc?.invitedBy,
-      approvedBy: originalDoc?.approvedBy,
-      approvedAt: originalDoc?.approvedAt,
+      accountStatus: 'pending_approval',
+      invitedBy: user.id,
     }
   }
 

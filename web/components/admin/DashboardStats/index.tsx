@@ -38,6 +38,7 @@ import { headers } from "next/headers";
 import { getPayload } from "payload";
 import { relationId } from "@/lib/simulari-access";
 import { fetchAdminStats, type AdminStats } from "../../../lib/posthog-server";
+import { TeamAdminPanel } from "./TeamAdminPanel";
 
 import "./styles.scss";
 
@@ -430,32 +431,11 @@ export default async function DashboardStats() {
       </div>
 
       {pendingApprovals.visible && (
-        <div className="ds-approvals">
-          <div className="ds-approvals__header">
-            <div>
-              <div className="ds-approvals__title">Aprobări utilizatori</div>
-              <div className="ds-approvals__hint">
-                {currentUser?.role === "super_admin"
-                  ? "Activează sau respinge membrii propuși de firme."
-                  : "Membrii propuși de firma ta așteaptă aprobarea Super Admin."}
-              </div>
-            </div>
-            <span className="ds-approvals__badge">{fmt(pendingApprovals.total)} în așteptare</span>
-          </div>
-          {pendingApprovals.docs.length === 0 ? (
-            <div className="ds-approvals__empty">Nu există utilizatori în așteptare.</div>
-          ) : (
-            <div className="ds-approvals__list">
-              {pendingApprovals.docs.map((item) => (
-                <a key={item.id} className="ds-approvals__item" href={`/admin/collections/users/${item.id}`}>
-                  <span>{item.email}</span>
-                  <strong>{item.role}</strong>
-                  <em>{item.firm}</em>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
+        <TeamAdminPanel
+          currentUser={currentUser}
+          pendingUsers={pendingApprovals.docs}
+          pendingTotal={pendingApprovals.total}
+        />
       )}
     </div>
   );

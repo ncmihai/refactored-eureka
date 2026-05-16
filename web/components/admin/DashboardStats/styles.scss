@@ -300,7 +300,7 @@
     }
   }
 
-  .ds-approvals {
+  .ds-team {
     margin-top: 12px;
     padding: 16px 18px;
     background: var(--theme-elevation-50);
@@ -338,6 +338,66 @@
       white-space: nowrap;
     }
 
+    &__form {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+
+      @media (max-width: 1100px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      @media (max-width: 700px) {
+        grid-template-columns: 1fr;
+      }
+
+      label {
+        display: grid;
+        gap: 5px;
+        font-size: 0.72rem;
+        color: var(--theme-elevation-500);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 38px;
+        border-radius: 6px;
+        border: 1px solid var(--theme-elevation-150);
+        background: var(--theme-elevation-0);
+        color: var(--theme-text);
+        padding: 8px 10px;
+        font-size: 0.875rem;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid rgba(42, 138, 103, 0.32);
+      border-radius: 6px;
+      background: rgba(42, 138, 103, 0.16);
+      color: var(--theme-success-300);
+      cursor: pointer;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 8px 12px;
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      &:hover:not(:disabled) {
+        background: rgba(42, 138, 103, 0.24);
+      }
+    }
+
     &__list {
       display: grid;
       gap: 0;
@@ -345,9 +405,9 @@
 
     &__item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(120px, auto);
+      grid-template-columns: minmax(0, 1fr) auto minmax(120px, auto) auto;
       gap: 12px;
-      align-items: baseline;
+      align-items: center;
       padding: 10px 0;
       border-top: 1px solid var(--theme-elevation-100);
       font-size: 0.8125rem;
@@ -368,9 +428,30 @@
         font-style: normal;
         font-weight: 400;
       }
+    }
 
-      &:hover span {
+    &__actions {
+      display: inline-flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    &__message {
+      margin-top: 12px;
+      font-size: 0.8125rem;
+      border-radius: 6px;
+      padding: 9px 10px;
+
+      &--ok {
         color: var(--theme-success-300);
+        background: rgba(42, 138, 103, 0.1);
+        border: 1px solid rgba(42, 138, 103, 0.2);
+      }
+
+      &--error {
+        color: rgb(235, 150, 150);
+        background: rgba(220, 80, 80, 0.08);
+        border: 1px solid rgba(220, 80, 80, 0.22);
       }
     }
   }

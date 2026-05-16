@@ -10,7 +10,8 @@
     "build:shiller-returns": "tsx scripts/build-shiller-index-returns.ts",
     "build:yahoo-returns": "tsx scripts/build-yahoo-chart-returns.ts",
     "import:index-returns": "tsx --env-file=.env.local scripts/import-index-returns.ts",
-    "check:simulari-access": "tsx scripts/check-simulari-access.ts"
+    "check:simulari-access": "tsx scripts/check-simulari-access.ts",
+    "check:team-admin-flow": "tsx scripts/check-team-admin-flow.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.83.0",
