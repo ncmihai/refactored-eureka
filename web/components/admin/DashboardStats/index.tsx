@@ -250,6 +250,19 @@ type PendingApprovalStats = {
   }>;
 };
 
+type TeamMemberStats = {
+  visible: boolean;
+  total: number;
+  docs: Array<{
+    id: string | number;
+    email: string;
+    role: string;
+    accountStatus: string;
+    firm: string;
+    createdAt: string;
+  }>;
+};
+
 async function fetchSavedSimulationStats() {
   try {
     const payload = await getPayload({ config });
@@ -352,6 +365,54 @@ async function fetchPendingApprovals(user: AdminUserLike): Promise<PendingApprov
   }
 }
 
+async function fetchTeamMembers(user: AdminUserLike): Promise<TeamMemberStats> {
+  if (!user || (user.role !== "super_admin" && user.role !== "admin_firma")) {
+    return { visible: false, total: 0, docs: [] };
+  }
+
+  const firmId = relationId(user.firm);
+  if (user.role === "admin_firma" && !firmId) {
+    return { visible: true, total: 0, docs: [] };
+  }
+
+  try {
+    const payload = await getPayload({ config });
+    const result = await payload.find({
+      collection: "users",
+      where:
+        user.role === "super_admin"
+          ? { role: { not_equals: "super_admin" } }
+          : { firm: { equals: firmId } },
+      sort: "-createdAt",
+      depth: 1,
+      limit: 12,
+      overrideAccess: true,
+    });
+
+    return {
+      visible: true,
+      total: result.totalDocs,
+      docs: result.docs.map((doc) => {
+        const firm = doc.firm;
+        const firmName =
+          firm && typeof firm === "object" && "nume" in firm
+            ? String(firm.nume ?? "-")
+            : String(firm ?? "-");
+        return {
+          id: doc.id,
+          email: String(doc.email ?? "-"),
+          role: String(doc.role ?? "-"),
+          accountStatus: String(doc.accountStatus ?? "-"),
+          firm: firmName,
+          createdAt: String(doc.createdAt ?? ""),
+        };
+      }),
+    };
+  } catch {
+    return { visible: true, total: 0, docs: [] };
+  }
+}
+
 /**
  * Main widget export — registered in payload.config.ts via
  * `admin.components.beforeDashboard`.
@@ -361,10 +422,11 @@ async function fetchPendingApprovals(user: AdminUserLike): Promise<PendingApprov
  */
 export default async function DashboardStats() {
   const currentUser = await fetchCurrentAdminUser();
-  const [stats, savedStats, pendingApprovals] = await Promise.all([
+  const [stats, savedStats, pendingApprovals, teamMembers] = await Promise.all([
     fetchAdminStats(),
     fetchSavedSimulationStats(),
     fetchPendingApprovals(currentUser),
+    fetchTeamMembers(currentUser),
   ]);
 
   return (
@@ -435,6 +497,8 @@ export default async function DashboardStats() {
           currentUser={currentUser}
           pendingUsers={pendingApprovals.docs}
           pendingTotal={pendingApprovals.total}
+          teamMembers={teamMembers.docs}
+          teamTotal={teamMembers.total}
         />
       )}
     </div>

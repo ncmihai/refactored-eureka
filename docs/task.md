@@ -259,11 +259,12 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 **Obiectiv:** după demo investițional, platforma devine produs SaaS utilizabil de firme mici: auth complet, multi-tenancy real, module lifecycle, conținut SEO și infrastructură fără cold-start.
 
 ### Faza 3A — Auth, tenancy & commercial access
-- [ ] Auth app-level pe Payload Users — login consultant, logout, protected routes pentru saved sessions/admin firmă
-- [ ] Roluri enforce în UI + API: Super Admin / Admin Firmă / Consultant / Guest
+- [/] Auth app-level pe Payload Users — login consultant, logout, protected routes pentru saved sessions/admin firmă
+- [/] Roluri enforce în UI + API: Super Admin / Admin Firmă / Consultant / Guest
+- [x] Beta admin dashboard: Admin Firmă propune membri, Super Admin aprobă/respinge, listă echipă cu status.
 - [ ] Multi-tenancy strict: `firm_id` pe simulări, produse custom firmă, logo PDF; acces filtrat by user.firm
 - [ ] Row-level security Postgres sau access-control Payload echivalent documentat; test de izolare cross-firm
-- [ ] Flow invitație consultant: Admin Firmă trimite email link, user setează parola, asociere automată la firmă
+- [/] Flow invitație consultant: MVP folosește parolă temporară + aprobare Super Admin; email link/self-set password rămâne următorul pas.
 - [ ] Plan abonament intern: trial firmă, active consultants count, status abonament, limitări export/saved sessions
 - [ ] Audit log pentru modificări CMS sensibile: produse, taxe, disclaimere, users, firme
 

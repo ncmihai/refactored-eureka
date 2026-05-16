@@ -1,7 +1,13 @@
 import config from "@payload-config";
 import { NextRequest, NextResponse } from "next/server";
 import { getPayload, type Where } from "payload";
-import { relationId, type AccountStatus, type SimulariRole, type SimulariUserLike } from "@/lib/simulari-access";
+import {
+  relationId,
+  type AccountStatus,
+  type RelationRef,
+  type SimulariRole,
+  type SimulariUserLike,
+} from "@/lib/simulari-access";
 
 const MANAGED_ROLES = new Set<SimulariRole>(["consultant", "admin_firma"]);
 
@@ -21,6 +27,29 @@ async function current(req: NextRequest) {
   const payload = await getPayload({ config });
   const auth = await payload.auth({ headers: req.headers });
   return { payload, user: auth.user as SimulariUserLike };
+}
+
+function firmName(firm: unknown) {
+  if (firm && typeof firm === "object" && "nume" in firm) {
+    return String((firm as { nume?: unknown }).nume ?? "-");
+  }
+  return firm ? String(firm) : "-";
+}
+
+function safeUser(doc: Record<string, unknown>) {
+  return {
+    id: doc.id,
+    email: doc.email,
+    nume: doc.nume,
+    role: doc.role,
+    accountStatus: doc.accountStatus,
+    firm: relationId(doc.firm as RelationRef),
+    firmName: firmName(doc.firm),
+    createdAt: doc.createdAt,
+    invitedBy: relationId(doc.invitedBy as RelationRef),
+    approvedBy: relationId(doc.approvedBy as RelationRef),
+    approvedAt: doc.approvedAt,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -43,7 +72,10 @@ export async function GET(req: NextRequest) {
     overrideAccess: true,
   });
 
-  return NextResponse.json({ docs: result.docs, totalDocs: result.totalDocs });
+  return NextResponse.json({
+    docs: result.docs.map((doc) => safeUser(doc as Record<string, unknown>)),
+    totalDocs: result.totalDocs,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -60,6 +92,15 @@ export async function POST(req: NextRequest) {
 
   if (!email || !email.includes("@")) return jsonError("invalid_email", 400);
   if (password.length < 6) return jsonError("password_too_short", 400);
+
+  const existing = await payload.find({
+    collection: "users",
+    where: { email: { equals: email } },
+    depth: 0,
+    limit: 1,
+    overrideAccess: true,
+  });
+  if (existing.totalDocs > 0) return jsonError("email_exists", 409);
 
   const firmId =
     user?.role === "super_admin"
@@ -87,5 +128,5 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   });
 
-  return NextResponse.json(doc, { status: 201 });
+  return NextResponse.json(safeUser(doc as Record<string, unknown>), { status: 201 });
 }

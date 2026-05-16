@@ -16,7 +16,13 @@ type PendingUser = {
   firm: string;
 };
 
+type TeamMember = PendingUser & {
+  accountStatus: string;
+  createdAt?: string;
+};
+
 const errorText: Record<string, string> = {
+  email_exists: "Există deja un utilizator cu acest email.",
   forbidden: "Nu ai drepturi pentru această acțiune.",
   invalid_email: "Emailul nu este valid.",
   password_too_short: "Parola temporară trebuie să aibă minimum 6 caractere.",
@@ -29,6 +35,14 @@ function roleLabel(role: string) {
   if (role === "admin_firma") return "Admin firmă";
   if (role === "consultant") return "Consultant";
   return role;
+}
+
+function statusLabel(status: string) {
+  if (status === "active") return "Activ";
+  if (status === "pending_approval") return "În aprobare";
+  if (status === "rejected") return "Respins";
+  if (status === "disabled") return "Dezactivat";
+  return status || "-";
 }
 
 async function readError(res: Response) {
@@ -44,10 +58,14 @@ export function TeamAdminPanel({
   currentUser,
   pendingUsers,
   pendingTotal,
+  teamMembers,
+  teamTotal,
 }: {
   currentUser: CurrentUser;
   pendingUsers: PendingUser[];
   pendingTotal: number;
+  teamMembers: TeamMember[];
+  teamTotal: number;
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -167,6 +185,7 @@ export function TeamAdminPanel({
         </form>
       )}
 
+      <div className="ds-team__section-title">Aprobări</div>
       <div className="ds-team__list">
         {pendingUsers.length === 0 ? (
           <div className="ds-team__empty">Nu există utilizatori în așteptare.</div>
@@ -186,6 +205,26 @@ export function TeamAdminPanel({
                   </button>
                 </div>
               )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="ds-team__section-title">
+        Echipă <span>{teamTotal} total</span>
+      </div>
+      <div className="ds-team__list">
+        {teamMembers.length === 0 ? (
+          <div className="ds-team__empty">Nu există membri în echipă.</div>
+        ) : (
+          teamMembers.map((user) => (
+            <div key={user.id} className="ds-team__item">
+              <span>{user.email}</span>
+              <strong>{roleLabel(user.role)}</strong>
+              <em>{user.firm}</em>
+              <b className={`ds-team__status ds-team__status--${user.accountStatus}`}>
+                {statusLabel(user.accountStatus)}
+              </b>
             </div>
           ))
         )}
