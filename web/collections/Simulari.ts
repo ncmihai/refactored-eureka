@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto'
-import type { Access, CollectionBeforeChangeHook, CollectionConfig, Where } from 'payload'
+import type { Access, CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import { relationId, simulariReadWhereForUser } from '../lib/simulari-access'
 
 const roles = ['super_admin', 'admin_firma', 'consultant'] as const
 
@@ -7,12 +8,6 @@ type AppUser = {
   id: string
   role?: (typeof roles)[number]
   firm?: string | { id?: string } | null
-}
-
-function relationId(value: AppUser['firm']): string | undefined {
-  if (!value) return undefined
-  if (typeof value === 'string') return value
-  return value.id
 }
 
 function shareId() {
@@ -23,17 +18,7 @@ const loggedIn: Access = ({ req }) => Boolean(req.user)
 
 const readAccess: Access = ({ req }) => {
   const user = req.user as AppUser | undefined
-  if (!user) return false
-  if (user.role === 'super_admin') return true
-
-  const firmId = relationId(user.firm)
-  if (user.role === 'admin_firma' && firmId) {
-    const where: Where = { firm: { equals: firmId } }
-    return where
-  }
-
-  const where: Where = { user: { equals: user.id } }
-  return where
+  return simulariReadWhereForUser(user)
 }
 
 const updateAccess: Access = (args) => readAccess(args)

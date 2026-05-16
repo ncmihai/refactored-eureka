@@ -1,7 +1,8 @@
 import config from "@payload-config";
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getPayload, type Where } from "payload";
+import { getPayload } from "payload";
+import { relationId, simulariReadWhereForUser, type SimulariUserLike } from "@/lib/simulari-access";
 
 const TOOLS = new Set([
   "credit",
@@ -12,18 +13,6 @@ const TOOLS = new Set([
   "comparator",
 ]);
 
-type AppUser = {
-  id: string;
-  role?: "super_admin" | "admin_firma" | "consultant";
-  firm?: string | { id?: string } | null;
-};
-
-function relationId(value: AppUser["firm"]): string | undefined {
-  if (!value) return undefined;
-  if (typeof value === "string") return value;
-  return value.id;
-}
-
 function newShareId() {
   return randomBytes(12).toString("base64url");
 }
@@ -31,7 +20,7 @@ function newShareId() {
 async function currentUser(req: NextRequest) {
   const payload = await getPayload({ config });
   const auth = await payload.auth({ headers: req.headers });
-  return { payload, user: auth.user as AppUser | null };
+  return { payload, user: auth.user as SimulariUserLike };
 }
 
 export async function GET(req: NextRequest) {
@@ -40,13 +29,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
 
-  const firmId = relationId(user.firm);
-  let where: Where | undefined;
-  if (user.role === "admin_firma" && firmId) {
-    where = { firm: { equals: firmId } };
-  } else if (user.role !== "super_admin") {
-    where = { user: { equals: user.id } };
-  }
+  const readWhere = simulariReadWhereForUser(user);
+  const where = readWhere === true ? undefined : readWhere === false ? { id: { equals: "__none__" } } : readWhere;
 
   const result = await payload.find({
     collection: "simulari",
@@ -86,7 +70,7 @@ export async function POST(req: NextRequest) {
       outputSummary: body.outputSummary,
       productSnapshots: body.productSnapshots ?? null,
       firm: relationId(user.firm),
-      user: user.id,
+      user: String(user.id),
       shareId: newShareId(),
       shareExpiresAt: expires.toISOString(),
       status: "active",

@@ -1,9 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
 import { capturePdfExport, type ToolSlug } from "@/lib/posthog";
 import { fetchAuthStatus, saveSimulation, type SimulareDoc } from "@/lib/simulari";
+
+function snapshotSignature(value: unknown) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function saveErrorMessage(message: string) {
+  const map: Record<string, string> = {
+    login_required: "Autentificarea este necesară pentru salvare.",
+    invalid_tool: "Unealta curentă nu poate fi salvată.",
+    missing_snapshot: "Lipsește snapshot-ul simulării. Rulează din nou simularea și încearcă salvarea.",
+    "HTTP 500": "Nu am putut salva simularea. Verifică sesiunea de admin și reîncearcă.",
+  };
+  return map[message] ?? (message.startsWith("HTTP 5") ? map["HTTP 500"] : message);
+}
 
 export function SaveSimulationPanel({
   tool,
@@ -20,9 +38,24 @@ export function SaveSimulationPanel({
 }) {
   const [clientAlias, setClientAlias] = useState("Client demo");
   const [saved, setSaved] = useState<SimulareDoc | null>(null);
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [auth, setAuth] = useState<AuthStatus | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const currentSignature = useMemo(
+    () =>
+      snapshotSignature({
+        tool,
+        clientAlias,
+        inputSnapshot,
+        outputSummary,
+        productSnapshots,
+      }),
+    [clientAlias, inputSnapshot, outputSummary, productSnapshots, tool],
+  );
+  const alreadySaved = Boolean(saved && savedSignature === currentSignature);
 
   useEffect(() => {
     fetchAuthStatus().then(setAuth).catch(() => {
@@ -51,16 +84,20 @@ export function SaveSimulationPanel({
         productSnapshots,
       });
       setSaved(doc);
+      setSavedSignature(currentSignature);
+      setCopied(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "save_failed";
-      setError(
-        message === "login_required"
-          ? "Autentificarea este necesară pentru salvare."
-          : message,
-      );
+      setError(saveErrorMessage(message));
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyShareUrl = async () => {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
   };
 
   return (
@@ -92,12 +129,23 @@ export function SaveSimulationPanel({
             <button
               type="button"
               className="btn-primary"
-              disabled={saving}
+              disabled={saving || alreadySaved}
               onClick={handleSave}
             >
-              {saving ? "Salvez…" : "Salvează simularea"}
+              {saving
+                ? "Salvez…"
+                : alreadySaved
+                  ? "Salvat"
+                  : saved
+                    ? "Salvează versiunea actualizată"
+                    : "Salvează simularea"}
             </button>
           </div>
+          {alreadySaved && (
+            <p className="text-sm text-[var(--accent)]">
+              Salvat. Linkul public și exportul sunt pregătite mai jos.
+            </p>
+          )}
         </>
       ) : (
         <div className="text-sm text-[var(--muted)]">
@@ -112,16 +160,22 @@ export function SaveSimulationPanel({
 
       {error && (
         <p className="text-sm text-[var(--danger)]">
-          {error} Intră în <a className="underline" href="/admin">admin</a> și
-          revino pe unealtă.
+          {error}{" "}
+          <a className="underline" href="/admin">
+            Intră în admin
+          </a>
+          .
         </p>
       )}
 
       {saved && shareUrl && (
         <div className="flex flex-col md:flex-row md:items-center gap-3 text-sm">
           <a className="btn-secondary" href={shareUrl}>
-            Deschide link public
+            Deschide raportul
           </a>
+          <button type="button" className="btn-secondary" onClick={copyShareUrl}>
+            {copied ? "Link copiat" : "Copiază link"}
+          </button>
           {pdfEnabled && (
             <a
               className="btn-secondary"

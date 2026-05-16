@@ -2,28 +2,7 @@ import config from "@payload-config";
 import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 import { buildSimulationPdf } from "@/lib/pdf";
-
-type AppUser = {
-  id: string;
-  role?: "super_admin" | "admin_firma" | "consultant";
-  firm?: string | { id?: string } | null;
-};
-
-type Relation = string | { id?: string } | null | undefined;
-
-function relationId(value: Relation): string | undefined {
-  if (!value) return undefined;
-  if (typeof value === "string") return value;
-  return value.id;
-}
-
-function canExport(doc: { user?: Relation; firm?: Relation }, user: AppUser) {
-  if (user.role === "super_admin") return true;
-  if (user.role === "admin_firma") {
-    return Boolean(relationId(user.firm) && relationId(user.firm) === relationId(doc.firm));
-  }
-  return relationId(doc.user) === user.id;
-}
+import { canReadSimulation, type SimulariUserLike } from "@/lib/simulari-access";
 
 export async function GET(
   req: Request,
@@ -32,7 +11,7 @@ export async function GET(
   const { id } = await params;
   const payload = await getPayload({ config });
   const auth = await payload.auth({ headers: req.headers });
-  const user = auth.user as AppUser | null;
+  const user = auth.user as SimulariUserLike;
   if (!user) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
@@ -47,11 +26,11 @@ export async function GET(
   const simulation = doc as unknown as {
     id: string;
     tool: string;
-    user?: Relation;
-    firm?: Relation;
+    user?: string | number | { id?: string | number } | null;
+    firm?: string | number | { id?: string | number } | null;
   };
 
-  if (!canExport(simulation, user)) {
+  if (!canReadSimulation(simulation, user)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   if (!["credit", "optimizare"].includes(String(simulation.tool))) {

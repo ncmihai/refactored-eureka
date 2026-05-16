@@ -51,6 +51,42 @@ type CreditOutput = {
   months_to_close?: number;
 };
 
+type OptimizareForm = {
+  principal?: number;
+  months?: number;
+  annual_rate_initial?: number;
+  annual_rate_after?: number;
+  revision_month?: number;
+  monthly_fee?: number;
+  grace_months?: number;
+  monthly_extra?: number;
+  investment_annual_return?: number;
+  investment_tax_rate?: number;
+};
+
+type OptimizareYearPoint = {
+  year: number;
+  scenario_a_interest_saved: string | number;
+  scenario_a_balance: string | number;
+  scenario_b_investment_value: string | number;
+  scenario_b_gain_net: string | number;
+  scenario_b_balance: string | number;
+  delta_b_minus_a: string | number;
+};
+
+type OptimizareOutput = {
+  standard_monthly_payment?: string | number;
+  scenario_a_total_interest?: string | number;
+  scenario_a_months_to_close?: number;
+  scenario_b_total_interest?: string | number;
+  scenario_b_final_investment_net?: string | number;
+  scenario_b_gain_net?: string | number;
+  interest_saved_by_prepay?: string | number;
+  crossover_year?: number | null;
+  recommended?: "A" | "B";
+  yearly?: OptimizareYearPoint[];
+};
+
 const PAGE_W = 595;
 const PAGE_H = 842;
 const M = 42;
@@ -141,6 +177,14 @@ function getProduct(doc: PdfDoc): Record<string, unknown> | undefined {
 
 function getCreditOutput(doc: PdfDoc): CreditOutput {
   return (isRecord(doc.outputSummary) ? doc.outputSummary : {}) as CreditOutput;
+}
+
+function getOptimizareForm(doc: PdfDoc): OptimizareForm {
+  return (recordAt(doc.inputSnapshot, "form") ?? {}) as OptimizareForm;
+}
+
+function getOptimizareOutput(doc: PdfDoc): OptimizareOutput {
+  return (isRecord(doc.outputSummary) ? doc.outputSummary : {}) as OptimizareOutput;
 }
 
 export function simulationHash(doc: PdfDoc) {
@@ -344,6 +388,137 @@ function drawCreditChart(pdf: PdfCanvas, schedule: AmortizationRow[], x: number,
   });
 }
 
+function drawOptimizareChart(pdf: PdfCanvas, yearly: OptimizareYearPoint[], crossover: number | null | undefined, x: number, y: number, w: number, h: number) {
+  pdf.rect(x, y, w, h, { fill: [0.995, 0.992, 0.982], stroke: BORDER });
+  pdf.text(x + 12, y + 20, "Evolutie castig net - scenariu A vs B", 11, { bold: true });
+  pdf.text(x + w - 112, y + 20, "A dobanda economisita", 8, { color: AMBER });
+  pdf.text(x + w - 112, y + 34, "B castig investitie", 8, { color: BRAND });
+
+  if (!yearly.length) {
+    pdf.text(x + 12, y + 58, "Nu exista date anuale in snapshot.", 10, { color: MUTED });
+    return;
+  }
+
+  const gx = x + 42;
+  const gy = y + 50;
+  const gw = w - 62;
+  const gh = h - 86;
+  const series = yearly.map((row) => ({
+    year: row.year,
+    a: num(row.scenario_a_interest_saved),
+    b: num(row.scenario_b_gain_net),
+  }));
+  const max = Math.max(1, ...series.flatMap((p) => [p.a, p.b])) * 1.08;
+
+  for (let i = 0; i <= 4; i += 1) {
+    const yy = gy + (gh * i) / 4;
+    pdf.line(gx, yy, gx + gw, yy, [0.9, 0.88, 0.84], 0.6);
+    pdf.text(gx - 8, yy + 3, fmt(max * (1 - i / 4), 0), 7, {
+      color: MUTED,
+      align: "right",
+    });
+  }
+
+  const toPoint = (valueKey: "a" | "b") =>
+    series.map((p, i) => {
+      const xx = gx + (series.length <= 1 ? 0 : (gw * i) / (series.length - 1));
+      const yy = gy + gh - (p[valueKey] / max) * gh;
+      return [xx, yy] as [number, number];
+    });
+
+  pdf.path(toPoint("a"), AMBER, 2);
+  pdf.path(toPoint("b"), BRAND, 2);
+  pdf.line(gx, gy, gx, gy + gh, BORDER, 0.8);
+  pdf.line(gx, gy + gh, gx + gw, gy + gh, BORDER, 0.8);
+  pdf.text(gx, gy + gh + 17, `Anul ${series[0]?.year ?? "-"}`, 7, { color: MUTED });
+  pdf.text(gx + gw, gy + gh + 17, `Anul ${series.at(-1)?.year ?? "-"}`, 7, {
+    color: MUTED,
+    align: "right",
+  });
+
+  if (crossover) {
+    const index = series.findIndex((row) => row.year === crossover);
+    if (index >= 0) {
+      const xx = gx + (series.length <= 1 ? 0 : (gw * index) / (series.length - 1));
+      pdf.line(xx, gy, xx, gy + gh, [0.52, 0.5, 0.46], 0.8);
+      pdf.text(xx + 4, gy + 12, "Crossover", 7, { color: MUTED });
+    }
+  }
+}
+
+function drawOptimizareReport(pdf: PdfCanvas, doc: PdfDoc, hash: string) {
+  const form = getOptimizareForm(doc);
+  const output = getOptimizareOutput(doc);
+  const product = getProduct(doc);
+  const yearly = Array.isArray(output.yearly) ? output.yearly : [];
+  const created = doc.createdAt ? new Date(doc.createdAt).toLocaleString("ro-RO") : new Date().toLocaleString("ro-RO");
+  const productName = product ? `${product.banca ?? ""} ${product.nume ?? ""}`.trim() : "Parametri custom";
+  const recommendation =
+    output.recommended === "B" ? "Scenariul B - investeste suma extra" : "Scenariul A - ramburseaza anticipat";
+  const reason =
+    output.recommended === "B"
+      ? "Castigul net al investitiei depaseste dobanda economisita pe orizontul analizat."
+      : "Dobanda economisita depaseste castigul net al investitiei pe orizontul analizat.";
+  const totalEffort = num(output.standard_monthly_payment) + num(form.monthly_extra);
+
+  pdf.text(M, 58, "Raport optimizare credit", 23, { bold: true, color: INK });
+  pdf.text(M, 80, `Client: ${doc.clientAlias ?? "Client demo"}`, 11, { color: MUTED });
+  pdf.text(PAGE_W - M, 58, relationLabel(doc.firm), 11, { bold: true, color: BRAND, align: "right" });
+  pdf.text(PAGE_W - M, 76, `Consultant: ${relationLabel(doc.user)}`, 9, { color: MUTED, align: "right" });
+  pdf.text(PAGE_W - M, 92, `Generat: ${created}`, 9, { color: MUTED, align: "right" });
+
+  drawSectionTitle(pdf, "Parametri folositi", 122);
+  drawKeyValueGrid(
+    pdf,
+    [
+      ["Produs", productName],
+      ["Suma imprumut", `${fmt(form.principal)} EUR`],
+      ["Perioada", `${form.months ?? "-"} luni`],
+      ["Dobanda initiala", pct(form.annual_rate_initial)],
+      ["Revizuire dobanda", form.revision_month ? `luna ${form.revision_month}` : "fara revizuire"],
+      ["Dobanda dupa revizuire", form.annual_rate_after ? pct(form.annual_rate_after) : "-"],
+      ["Suma extra lunara", `${fmt(form.monthly_extra)} EUR`],
+      ["Randament / impozit", `${pct(form.investment_annual_return)} / ${pct(form.investment_tax_rate)}`],
+    ],
+    M,
+    146,
+    PAGE_W - M * 2,
+  );
+
+  drawSectionTitle(pdf, "Recomandare", 294);
+  pdf.rect(M, 318, PAGE_W - M * 2, 72, { fill: [0.985, 0.98, 0.955], stroke: BORDER });
+  pdf.rect(M, 318, 5, 72, { fill: output.recommended === "B" ? BRAND : AMBER });
+  pdf.text(M + 16, 342, recommendation, 15, { bold: true, color: output.recommended === "B" ? BRAND : AMBER });
+  pdf.wrappedText(M + 16, 362, `${reason} ${output.crossover_year ? `Crossover in anul ${output.crossover_year}.` : "Fara crossover in orizontul ales."}`, 9, PAGE_W - M * 2 - 32, {
+    color: MUTED,
+    lineHeight: 12,
+  });
+
+  drawSectionTitle(pdf, "Blocuri informative", 414);
+  const statW = (PAGE_W - M * 2 - 18) / 3;
+  drawStat(pdf, M, 438, statW, "Rata standard", `${fmt(output.standard_monthly_payment)} EUR`, "principal + dobanda + comision");
+  drawStat(pdf, M + statW + 9, 438, statW, "Efort lunar total", `${fmt(totalEffort)} EUR`, "rata + suma extra");
+  drawStat(pdf, M + (statW + 9) * 2, 438, statW, "Investitie lunara B", `${fmt(form.monthly_extra)} EUR`);
+  drawStat(pdf, M, 513, statW, "A dobanda economisita", `${fmt(output.interest_saved_by_prepay)} EUR`, `inchide in ${output.scenario_a_months_to_close ?? "-"} luni`);
+  drawStat(pdf, M + statW + 9, 513, statW, "B castig net", `${fmt(output.scenario_b_gain_net)} EUR`);
+  drawStat(pdf, M + (statW + 9) * 2, 513, statW, "B portofoliu final", `${fmt(output.scenario_b_final_investment_net)} EUR`);
+
+  drawOptimizareChart(pdf, yearly, output.crossover_year, M, 606, PAGE_W - M * 2, 146);
+
+  pdf.text(M, 768, `Share ID: ${doc.shareId ?? "-"}`, 8, { color: MUTED });
+  pdf.text(M, 782, `Hash input/output: ${hash}`, 7, { color: MUTED });
+  pdf.wrappedText(
+    M,
+    800,
+    "Raport educational, nu constituie consultanta financiara, fiscala sau de investitii. Proiectiile sunt scenarii ipotetice si nu garanteaza rezultate viitoare.",
+    8,
+    PAGE_W - M * 2,
+    { color: MUTED, lineHeight: 10 },
+  );
+
+  drawOptimizareYearlyPages(pdf, yearly);
+}
+
 function drawCreditReport(pdf: PdfCanvas, doc: PdfDoc, hash: string) {
   const form = getCreditForm(doc);
   const output = getCreditOutput(doc);
@@ -471,6 +646,62 @@ function drawSchedulePages(pdf: PdfCanvas, schedule: AmortizationRow[]) {
   }
 }
 
+function drawOptimizareYearlyPages(pdf: PdfCanvas, yearly: OptimizareYearPoint[]) {
+  const headers = ["Anul", "A dobanda econ.", "A sold credit", "B castig net", "B portofoliu", "Delta B-A"];
+  const widths = [42, 92, 86, 86, 86, 84];
+  const x0 = M;
+  const rowH = 19;
+  const rowsPerPage = 31;
+  let index = 0;
+
+  while (index < yearly.length || (yearly.length === 0 && index === 0)) {
+    pdf.addPage();
+    pdf.text(M, 58, "Comparatie anuala A vs B", 20, { bold: true });
+    pdf.text(M, 78, "Snapshot anual generat din simularea salvata.", 9, { color: MUTED });
+
+    let x = x0;
+    const y = 110;
+    pdf.rect(x0, y - 12, widths.reduce((a, b) => a + b, 0), rowH, { fill: BRAND });
+    headers.forEach((header, i) => {
+      pdf.text(x + 4, y, header, 7.2, { color: [1, 1, 1], bold: true });
+      x += widths[i] ?? 0;
+    });
+
+    const pageRows = yearly.slice(index, index + rowsPerPage);
+    if (!pageRows.length) {
+      pdf.text(x0, y + 28, "Nu exista randuri anuale in snapshot.", 10, { color: MUTED });
+      break;
+    }
+
+    pageRows.forEach((row, rIdx) => {
+      const yy = y + 18 + rIdx * rowH;
+      if (rIdx % 2 === 0) {
+        pdf.rect(x0, yy - 12, widths.reduce((a, b) => a + b, 0), rowH, { fill: SOFT });
+      }
+      let cx = x0;
+      const values = [
+        String(row.year),
+        fmt(row.scenario_a_interest_saved),
+        fmt(row.scenario_a_balance),
+        fmt(row.scenario_b_gain_net),
+        fmt(row.scenario_b_investment_value),
+        fmt(row.delta_b_minus_a),
+      ];
+      values.forEach((value, i) => {
+        const alignRight = i > 0;
+        pdf.text(alignRight ? cx + (widths[i] ?? 0) - 5 : cx + 4, yy, value, 7.1, {
+          color: INK,
+          align: alignRight ? "right" : "left",
+        });
+        cx += widths[i] ?? 0;
+      });
+      pdf.line(x0, yy + 6, x0 + widths.reduce((a, b) => a + b, 0), yy + 6, [0.91, 0.9, 0.86], 0.4);
+    });
+
+    index += rowsPerPage;
+  }
+}
+
 function drawFallbackReport(pdf: PdfCanvas, doc: PdfDoc, hash: string) {
   const title =
     doc.tool === "optimizare"
@@ -518,6 +749,8 @@ export function buildSimulationPdf(doc: PdfDoc) {
 
   if (doc.tool === "credit") {
     drawCreditReport(pdf, doc, hash);
+  } else if (doc.tool === "optimizare") {
+    drawOptimizareReport(pdf, doc, hash);
   } else {
     drawFallbackReport(pdf, doc, hash);
   }
