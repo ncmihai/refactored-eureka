@@ -26,12 +26,16 @@ function textId(value: unknown) {
   return undefined
 }
 
+function relationValue(value: unknown) {
+  return typeof value === 'string' || typeof value === 'number' ? value : undefined
+}
+
 function docId(doc: TypeWithID | Record<string, unknown>) {
   return textId(doc.id) ?? 'unknown'
 }
 
 async function createAuditLog(payload: Payload, user: AuditUser | undefined, entry: AuditEntry) {
-  const actorId = textId(user?.id)
+  const actorId = relationValue(user?.id)
   const firmId = relationId(user?.firm)
 
   await payload.create({
