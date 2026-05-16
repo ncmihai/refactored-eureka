@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS "simulari" (
   "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS "simulari_id_seq" OWNED BY "simulari"."id";
+SELECT setval('"simulari_id_seq"', COALESCE((SELECT MAX("id") FROM "simulari"), 0) + 1, false);
+ALTER TABLE "simulari" ALTER COLUMN "id" SET DEFAULT nextval('"simulari_id_seq"'::regclass);
+
 CREATE TABLE IF NOT EXISTS "_simulari_v" (
   "id" serial PRIMARY KEY,
   "parent_id" integer,
@@ -61,6 +65,10 @@ CREATE TABLE IF NOT EXISTS "_simulari_v" (
   "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL
 );
+
+CREATE SEQUENCE IF NOT EXISTS "_simulari_v_id_seq" OWNED BY "_simulari_v"."id";
+SELECT setval('"_simulari_v_id_seq"', COALESCE((SELECT MAX("id") FROM "_simulari_v"), 0) + 1, false);
+ALTER TABLE "_simulari_v" ALTER COLUMN "id" SET DEFAULT nextval('"_simulari_v_id_seq"'::regclass);
 
 CREATE UNIQUE INDEX IF NOT EXISTS "simulari_share_id_idx" ON "simulari" ("share_id");
 CREATE INDEX IF NOT EXISTS "simulari_tool_idx" ON "simulari" ("tool");
