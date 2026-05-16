@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
 import { fetchAuthStatus } from "@/lib/simulari";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const tools = [
   {
@@ -88,39 +87,49 @@ export function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7">
+        <div className="flex items-center gap-2">
+          {auth.authenticated && auth.user ? (
+            <>
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
+                <span className="max-w-[140px] truncate">
+                  {displayName(auth.user)}
+                </span>
+                <span className="pill">{roleLabel(auth.user.role)}</span>
+              </span>
+            </>
+          ) : (
+            <Link href="/admin" className="btn-ghost text-sm">
+              Intră
+            </Link>
+          )}
           <div className="relative" ref={ref}>
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
               aria-haspopup="menu"
               aria-expanded={open}
-              className="nav-link inline-flex items-center gap-1.5"
+              aria-label="Deschide meniul aplicației"
+              className="btn-ghost h-9 w-9 p-0 grid place-items-center"
               data-active={anyActive || undefined}
             >
-              Tools
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 10 10"
-                aria-hidden="true"
-                className={`transition-transform ${open ? "rotate-180" : ""}`}
-              >
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                 <path
-                  d="M2 3.5 L5 6.5 L8 3.5"
+                  d="M3 5h12M3 9h12M3 13h12"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.4"
+                  strokeWidth="1.6"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
                 />
               </svg>
             </button>
             {open && (
               <div
                 role="menu"
-                className="absolute right-0 mt-2 w-[320px] card p-2 shadow-lg bg-[var(--background)]"
+                className="absolute right-0 mt-2 w-[min(360px,calc(100vw-2rem))] card p-2 shadow-lg bg-[var(--background)]"
               >
+                <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
+                  Unelte
+                </div>
                 {tools.map((t) => {
                   const active = pathname?.startsWith(t.href);
                   return (
@@ -149,33 +158,49 @@ export function Navbar() {
                     </Link>
                   );
                 })}
+
+                <div className="my-2 border-t border-[var(--border)]" />
+                <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
+                  Workspace
+                </div>
+                {auth.authenticated && auth.user ? (
+                  <>
+                    <Link
+                      href="/simulari"
+                      role="menuitem"
+                      className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                    >
+                      <div className="text-sm font-medium">Simulări salvate</div>
+                      <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                        Istoric, share links și exporturi PDF
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                    >
+                      <div className="text-sm font-medium">Admin</div>
+                      <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                        {displayName(auth.user)} · {roleLabel(auth.user.role)}
+                      </div>
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href="/admin"
+                    role="menuitem"
+                    className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                  >
+                    <div className="text-sm font-medium">Intră în admin</div>
+                    <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                      Salvare, istoric și exporturi după login
+                    </div>
+                  </Link>
+                )}
               </div>
             )}
           </div>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {auth.authenticated && auth.user ? (
-            <>
-              <Link href="/simulari" className="btn-ghost text-sm">
-                Simulări
-              </Link>
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
-                <span className="max-w-[140px] truncate">
-                  {displayName(auth.user)}
-                </span>
-                <span className="pill">{roleLabel(auth.user.role)}</span>
-              </span>
-              <Link href="/admin" className="btn-ghost text-sm">
-                Admin
-              </Link>
-            </>
-          ) : (
-            <Link href="/admin" className="btn-ghost text-sm">
-              Intră
-            </Link>
-          )}
         </div>
       </div>
     </header>

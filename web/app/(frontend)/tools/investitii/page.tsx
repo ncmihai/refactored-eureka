@@ -17,6 +17,7 @@ import {
   CartesianGrid,
   Legend,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -133,6 +134,15 @@ const INDEX_LABELS: Record<RandamentIndice["indice"], string> = {
   OTHER: "Alt indice",
 };
 
+const crisisStatusLabel: Record<
+  MonteCarloResponse["crisis_scenarios"][number]["status"],
+  string
+> = {
+  available: "Disponibil",
+  insufficient_history: "Istoric insuficient",
+  insufficient_horizon: "Orizont insuficient",
+};
+
 type IndexReturnDataset = (typeof indexReturnMetadata.datasets)[number];
 
 const monthLabel = (value: string) =>
@@ -177,6 +187,7 @@ export default function InvestitiiETF() {
   const [mcError, setMcError] = useState<string | null>(null);
   const [funds, setFunds] = useState<FondETF[]>([]);
   const [indexReturns, setIndexReturns] = useState<RandamentIndice[]>([]);
+  const [indexDataLoading, setIndexDataLoading] = useState(true);
   const [selectedFundId, setSelectedFundId] = useState("");
   const [deterministicInputSnapshot, setDeterministicInputSnapshot] =
     useState<unknown>(null);
@@ -201,7 +212,9 @@ export default function InvestitiiETF() {
 
   useEffect(() => {
     fetchFonduriETF().then(setFunds);
-    fetchIndiciIstorici().then(setIndexReturns);
+    fetchIndiciIstorici()
+      .then(setIndexReturns)
+      .finally(() => setIndexDataLoading(false));
   }, []);
 
   const availableIndices = Array.from(
@@ -242,6 +255,7 @@ export default function InvestitiiETF() {
     historicalMonthlyReturns.length > 0
       ? historicalMonthlyReturns
       : DEMO_MONTHLY_RETURNS;
+  const canRunMonteCarlo = !indexDataLoading && !mcLoading;
   const selectedFund = funds.find((x) => String(x.id) === selectedFundId);
 
   const applyFund = (id: string) => {
@@ -508,11 +522,15 @@ export default function InvestitiiETF() {
           </div>
           <button
             type="button"
-            disabled={mcLoading}
+            disabled={!canRunMonteCarlo}
             className="btn-primary md:mt-1"
             onClick={runMonteCarlo}
           >
-            {mcLoading ? "Rulez Monte Carlo…" : "Rulează Monte Carlo"}
+            {mcLoading
+              ? "Rulez Monte Carlo…"
+              : indexDataLoading
+                ? "Încarc istoricul…"
+                : "Rulează Monte Carlo"}
           </button>
           <button
             type="button"
@@ -524,6 +542,35 @@ export default function InvestitiiETF() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className="rounded-md border border-[var(--border)] p-3">
+              <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
+                Sumă inițială
+              </div>
+              <div className="mt-1 font-medium">{fmt(form.principal)} €</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] p-3">
+              <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
+                Contribuție
+              </div>
+              <div className="mt-1 font-medium">
+                {fmt(form.monthly_contribution)} € / lună
+              </div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] p-3">
+              <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
+                Orizont
+              </div>
+              <div className="mt-1 font-medium">{form.months} luni</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] p-3">
+              <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
+                Cost fond
+              </div>
+              <div className="mt-1 font-medium">TER {fmt(form.ter, 2)}%</div>
+            </div>
+          </div>
+
           <Select
             label="Indice istoric"
             value={selectedIndex}
@@ -566,7 +613,12 @@ export default function InvestitiiETF() {
         </div>
 
         <div className="border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
-          {selectedIndexStats ? (
+          {indexDataLoading ? (
+            <p>
+              Se încarcă randamentele istorice. Monte Carlo pornește după ce
+              știm exact dacă folosim dataset local sau fallback demo.
+            </p>
+          ) : selectedIndexStats ? (
             <p>
               Seria Monte Carlo folosește{" "}
               <strong className="text-[var(--ink)]">
@@ -762,6 +814,114 @@ export default function InvestitiiETF() {
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
+
+            <ChartCard title="Scenarii istorice de criză">
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart
+                  data={Array.from(
+                    {
+                      length: Math.max(
+                        0,
+                        ...mcResult.crisis_scenarios.map((scenario) => scenario.line.length),
+                      ),
+                    },
+                    (_, index) => {
+                      const month = index + 1;
+                      return {
+                        month,
+                        ...Object.fromEntries(
+                          mcResult.crisis_scenarios
+                            .filter((scenario) => scenario.status === "available")
+                            .map((scenario) => [
+                              scenario.label,
+                              scenario.line[index]
+                                ? conv(realFactor(scenario.line[index].value))
+                                : undefined,
+                            ]),
+                        ),
+                      };
+                    },
+                  )}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e0" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "#57534e" }}
+                    stroke="#d6d3cd"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#57534e" }}
+                    stroke="#d6d3cd"
+                    tickFormatter={(v) => `${(Number(v) / 1000).toFixed(1)}k`}
+                  />
+                  <Tooltip
+                    formatter={(v) => `${fmt(Number(v))} ${sym}`}
+                    labelFormatter={(m) => `Luna ${m}`}
+                    contentStyle={{
+                      background: "#fff",
+                      border: "1px solid #e7e5e0",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                  {mcResult.crisis_scenarios
+                    .filter((scenario) => scenario.status === "available")
+                    .map((scenario, index) => (
+                      <Line
+                        key={scenario.label}
+                        type="monotone"
+                        dataKey={scenario.label}
+                        stroke={["#15543d", "#b45309", "#7c3aed", "#0f766e", "#b91c1c", "#475569"][index % 6]}
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <TableCard>
+              <thead className="bg-[var(--background)] sticky top-0 border-b border-[var(--border)]">
+                <tr>
+                  <Th>Scenariu</Th>
+                  <Th>Start</Th>
+                  <Th>Status</Th>
+                  <Th>Valoare finală</Th>
+                  <Th>CAGR</Th>
+                  <Th>Max drawdown</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {mcResult.crisis_scenarios.map((scenario) => (
+                  <tr key={scenario.label} className="border-t border-[var(--border)]">
+                    <Td>{scenario.label}</Td>
+                    <Td>
+                      {scenario.start_date
+                        ? monthLabel(scenario.start_date)
+                        : `${scenario.start_year}`}
+                    </Td>
+                    <Td>{crisisStatusLabel[scenario.status]}</Td>
+                    <Td>
+                      {scenario.final_net_value === null
+                        ? "—"
+                        : `${fmt(conv(realFactor(scenario.final_net_value)))} ${sym}`}
+                    </Td>
+                    <Td>
+                      {scenario.cagr_net === null
+                        ? "—"
+                        : `${fmt(scenario.cagr_net * 100, 2)}%`}
+                    </Td>
+                    <Td>
+                      {scenario.max_drawdown === null
+                        ? "—"
+                        : `${fmt(scenario.max_drawdown * 100, 1)}%`}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableCard>
 
             <Disclaimer modul="etf" />
             <DisclaimerNote>

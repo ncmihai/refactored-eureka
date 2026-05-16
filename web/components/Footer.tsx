@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export function Footer() {
   const year = new Date().getFullYear();
   return (
@@ -31,6 +33,9 @@ export function Footer() {
             <li><span className="text-[var(--muted-2)]">Blog (în curând)</span></li>
             <li><span className="text-[var(--muted-2)]">Despre (în curând)</span></li>
           </ul>
+          <div className="mt-5">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
       <div className="border-t border-[var(--border)]">
