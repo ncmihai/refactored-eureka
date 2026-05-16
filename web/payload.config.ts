@@ -1,12 +1,16 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { redirectsPlugin } from '@payloadcms/plugin-redirects'
 import path from 'path'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { AuditLogs } from './collections/AuditLogs'
+import { CategoriiEducationale } from './collections/CategoriiEducationale'
+import { ContinutEducational } from './collections/ContinutEducational'
 import { CursuriValutare } from './collections/CursuriValutare'
+import { DemoRequests } from './collections/DemoRequests'
 import { Disclaimere } from './collections/Disclaimere'
 import { DobanziDepozit } from './collections/DobanziDepozit'
 import { Firme } from './collections/Firme'
@@ -62,6 +66,9 @@ export default buildConfig({
     Firme,
     AuditLogs,
     Media,
+    CategoriiEducationale,
+    ContinutEducational,
+    DemoRequests,
     ProduseCredit,
     ProduseUL,
     DobanziDepozit,
@@ -82,5 +89,16 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
+  plugins: [
+    redirectsPlugin({
+      collections: ['continut-educational'],
+      overrides: {
+        admin: {
+          hidden: ({ user }) => user?.role !== 'super_admin',
+          group: 'Conținut',
+        },
+      },
+    }),
+  ],
   sharp,
 })

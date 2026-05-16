@@ -218,6 +218,58 @@ body {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.article-content {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.article-content > * + * {
+  margin-top: 1.15rem;
+}
+
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  color: var(--foreground);
+  line-height: 1.15;
+  letter-spacing: 0;
+  margin-top: 2rem;
+}
+
+.article-content h2 { font-size: clamp(1.75rem, 1.45rem + 1vw, 2.5rem); }
+.article-content h3 { font-size: clamp(1.35rem, 1.2rem + 0.5vw, 1.8rem); }
+.article-content h4 { font-size: 1.15rem; }
+
+.article-content p,
+.article-content li {
+  color: var(--muted);
+}
+
+.article-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.article-content ul,
+.article-content ol {
+  padding-left: 1.35rem;
+}
+
+.article-content ul { list-style: disc; }
+.article-content ol { list-style: decimal; }
+
+.article-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--foreground);
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;

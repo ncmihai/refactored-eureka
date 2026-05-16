@@ -39,6 +39,19 @@ const tools = [
   },
 ];
 
+const contentLinks = [
+  {
+    href: "/blog",
+    label: "Blog educațional",
+    desc: "Ghiduri RO despre credite, economii și investiții",
+  },
+  {
+    href: "/demo",
+    label: "Cere demo",
+    desc: "Flow B2B cu simulări, share links și PDF white-label",
+  },
+];
+
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -156,6 +169,39 @@ export function Navbar() {
                       </div>
                       <div className="text-[11px] text-[var(--muted)] mt-0.5 leading-snug">
                         {t.desc}
+                      </div>
+                    </Link>
+                  );
+                })}
+
+                <div className="my-2 border-t border-[var(--border)]" />
+                <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
+                  Conținut
+                </div>
+                {contentLinks.map((link) => {
+                  const active = pathname?.startsWith(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      role="menuitem"
+                      className={`block px-3 py-2.5 rounded-md transition-colors ${
+                        active
+                          ? "bg-[var(--accent-soft)]"
+                          : "hover:bg-[var(--accent-soft)]/50"
+                      }`}
+                    >
+                      <div
+                        className={`text-sm font-medium ${
+                          active
+                            ? "text-[var(--accent)]"
+                            : "text-[var(--foreground)]"
+                        }`}
+                      >
+                        {link.label}
+                      </div>
+                      <div className="text-[11px] text-[var(--muted)] mt-0.5 leading-snug">
+                        {link.desc}
                       </div>
                     </Link>
                   );

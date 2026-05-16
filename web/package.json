@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "build:shiller-returns": "tsx scripts/build-shiller-index-returns.ts",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "^3.83.0",
     "@payloadcms/next": "^3.83.0",
+    "@payloadcms/plugin-redirects": "3.83.0",
     "@payloadcms/richtext-lexical": "^3.83.0",
     "@sentry/nextjs": "^10.49.0",
     "graphql": "^16.13.2",

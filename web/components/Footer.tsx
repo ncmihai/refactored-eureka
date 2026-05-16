@@ -30,8 +30,8 @@ export function Footer() {
           <div className="font-medium mb-3">Platformă</div>
           <ul className="space-y-2 text-[var(--muted)]">
             <li><a href="/admin" className="hover:text-[var(--foreground)]">Admin CMS</a></li>
-            <li><span className="text-[var(--muted-2)]">Blog (în curând)</span></li>
-            <li><span className="text-[var(--muted-2)]">Despre (în curând)</span></li>
+            <li><a href="/blog" className="hover:text-[var(--foreground)]">Blog educațional</a></li>
+            <li><a href="/demo" className="hover:text-[var(--foreground)]">Cere demo</a></li>
           </ul>
           <div className="mt-5">
             <ThemeToggle />
