@@ -101,7 +101,7 @@ export default function DepozitBancar() {
   const applyDeposit = (id: string) => {
     setSelectedDepositId(id);
     if (!id) return;
-    const d = deposits.find((x) => x.id === id);
+    const d = deposits.find((x) => String(x.id) === id);
     if (!d) return;
     setForm((f) => ({
       ...f,
@@ -118,7 +118,7 @@ export default function DepozitBancar() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
-  const selectedDeposit = deposits.find((x) => x.id === selectedDepositId);
+  const selectedDeposit = deposits.find((x) => String(x.id) === selectedDepositId);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

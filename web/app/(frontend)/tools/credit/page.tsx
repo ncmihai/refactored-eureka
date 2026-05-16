@@ -61,6 +61,7 @@ type CreditResponse = {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+const DEFAULT_IRCC_RATE = 5.8;
 
 const fmt = (v: string | number, digits = 2) =>
   Number(v).toLocaleString("ro-RO", {
@@ -107,13 +108,19 @@ export default function CreditSimulator() {
   const applyProduct = (id: string) => {
     setSelectedProductId(id);
     if (!id) return;
-    const p = products.find((x) => x.id === id);
+    const p = products.find((x) => String(x.id) === id);
     if (!p) return;
+    const revisionMonth =
+      p.tipDobanda === "fix_variabil" && p.perioadaFixa ? p.perioadaFixa : 0;
+    const variableRate =
+      p.tipDobanda === "fix_variabil"
+        ? DEFAULT_IRCC_RATE + (p.spread ?? 0)
+        : 0;
     setForm((f) => ({
       ...f,
       annual_rate_initial: p.dobandaInitiala,
-      revision_month:
-        p.tipDobanda === "fix_variabil" && p.perioadaFixa ? p.perioadaFixa : 0,
+      annual_rate_after: variableRate,
+      revision_month: revisionMonth,
       monthly_fee: p.comisionLunar ?? 0,
       principal:
         p.sumaMinima && f.principal < p.sumaMinima
@@ -124,6 +131,9 @@ export default function CreditSimulator() {
           ? p.perioadaMaxima
           : f.months,
     }));
+    if (p.moneda === "RON" || p.moneda === "EUR") {
+      setCurrency((current) => ({ ...current, display: p.moneda }));
+    }
   };
 
   const update = <K extends keyof typeof form>(
@@ -131,7 +141,7 @@ export default function CreditSimulator() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
-  const selectedProduct = products.find((x) => x.id === selectedProductId);
+  const selectedProduct = products.find((x) => String(x.id) === selectedProductId);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

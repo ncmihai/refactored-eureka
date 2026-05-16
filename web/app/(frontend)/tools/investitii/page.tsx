@@ -138,8 +138,6 @@ const INDEX_LABELS: Record<RandamentIndice["indice"], string> = {
   OTHER: "Alt indice",
 };
 
-const CRISIS_COLORS = ["#7f1d1d", "#9a3412", "#854d0e", "#1d4ed8", "#6d28d9", "#be185d"];
-
 type IndexReturnDataset = (typeof indexReturnMetadata.datasets)[number];
 
 const monthLabel = (value: string) =>
@@ -179,6 +177,7 @@ export default function InvestitiiETF() {
   const [mcResult, setMcResult] = useState<MonteCarloResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [mcLoading, setMcLoading] = useState(false);
+  const [mcOpen, setMcOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mcError, setMcError] = useState<string | null>(null);
   const [funds, setFunds] = useState<FondETF[]>([]);
@@ -248,12 +247,12 @@ export default function InvestitiiETF() {
     historicalMonthlyReturns.length > 0
       ? historicalMonthlyReturns
       : DEMO_MONTHLY_RETURNS;
-  const selectedFund = funds.find((x) => x.id === selectedFundId);
+  const selectedFund = funds.find((x) => String(x.id) === selectedFundId);
 
   const applyFund = (id: string) => {
     setSelectedFundId(id);
     if (!id) return;
-    const fund = funds.find((x) => x.id === id);
+    const fund = funds.find((x) => String(x.id) === id);
     if (!fund) return;
     setForm((f) => ({
       ...f,
@@ -465,7 +464,40 @@ export default function InvestitiiETF() {
         </div>
       </form>
 
-      <section className="card p-6 md:p-7 space-y-5 reveal reveal-4">
+      <section className="card p-5 md:p-6 reveal reveal-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.14em] text-[var(--muted-2)]">
+              Sub-tool investiții
+            </div>
+            <h2 className="font-serif h-card tracking-tight mt-1">
+              Monte Carlo istoric
+            </h2>
+            <p className="text-sm text-[var(--muted)] mt-2 max-w-3xl">
+              Deschide analiza într-o fereastră separată. Proiecția deterministă
+              rămâne rapidă și nu rulează bootstrap istoric implicit.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setMcOpen(true)}
+          >
+            Deschide Monte Carlo
+          </button>
+        </div>
+      </section>
+
+      {mcOpen && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Monte Carlo istoric"
+          onClick={() => setMcOpen(false)}
+        >
+          <div className="modal-window" onClick={(event) => event.stopPropagation()}>
+            <section className="p-5 md:p-7 space-y-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
             <div className="text-xs uppercase tracking-[0.14em] text-[var(--muted-2)]">
@@ -475,8 +507,8 @@ export default function InvestitiiETF() {
               Monte Carlo istoric
             </h2>
             <p className="text-sm text-[var(--muted)] mt-2 max-w-3xl">
-              Rulează separat bootstrap-ul istoric și scenariile de criză. Nu se
-              consumă timp de calcul când folosești proiecția deterministă.
+              Rulează separat bootstrap-ul istoric și distribuția percentilelor.
+              Nu se consumă timp de calcul când folosești proiecția deterministă.
             </p>
           </div>
           <button
@@ -486,6 +518,13 @@ export default function InvestitiiETF() {
             onClick={runMonteCarlo}
           >
             {mcLoading ? "Rulez Monte Carlo…" : "Rulează Monte Carlo"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary md:mt-1"
+            onClick={() => setMcOpen(false)}
+          >
+            Închide
           </button>
         </div>
 
@@ -566,7 +605,7 @@ export default function InvestitiiETF() {
         {mcError && (
           <p className="text-sm text-[var(--danger)]">{mcError}</p>
         )}
-      </section>
+            </section>
 
       {mcResult && (() => {
         const sym = currencySymbol(currency);
@@ -576,31 +615,16 @@ export default function InvestitiiETF() {
           inflation.mode === "real" && inflation.rate > 0
             ? (v: number) => deflate(v, inflation.rate, years)
             : (v: number) => v;
-        const crisisScenarios = mcResult.crisis_scenarios ?? [];
-        const availableCrisisScenarios = crisisScenarios.filter(
-          (scenario) => scenario.status === "available",
-        );
-        const crisisChartData = mcResult.percentiles.map((r) => {
-          const point: Record<string, number> = {
+        const percentileChartData = mcResult.percentiles.map((r) => ({
             month: r.month,
             p10: conv(realFactor(r.p10)),
             p25: conv(realFactor(r.p25)),
             p50: conv(realFactor(r.p50)),
             p75: conv(realFactor(r.p75)),
             p90: conv(realFactor(r.p90)),
-          };
-          availableCrisisScenarios.forEach((scenario) => {
-            const scenarioPoint = scenario.line.find((item) => item.month === r.month);
-            if (scenarioPoint) {
-              point[`crisis_${scenario.start_year}`] = conv(
-                realFactor(scenarioPoint.value),
-              );
-            }
-          });
-          return point;
-        });
+        }));
         return (
-          <section className="space-y-6 reveal reveal-fade">
+          <section className="p-5 md:p-7 pt-0 space-y-6 reveal reveal-fade">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InflationToggle value={inflation} onChange={setInflation} />
               <CurrencyToggle value={currency} onChange={setCurrency} />
@@ -673,7 +697,7 @@ export default function InvestitiiETF() {
             <ChartCard title="Fan chart Monte Carlo P10 / P25 / P50 / P75 / P90">
               <ResponsiveContainer width="100%" height={320}>
                 <AreaChart
-                  data={crisisChartData}
+                  data={percentileChartData}
                   margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e0" />
@@ -740,64 +764,9 @@ export default function InvestitiiETF() {
                     strokeDasharray="4 4"
                     dot={false}
                   />
-                  {availableCrisisScenarios.map((scenario, index) => (
-                    <Line
-                      key={scenario.start_year}
-                      type="monotone"
-                      dataKey={`crisis_${scenario.start_year}`}
-                      name={`${scenario.start_year}`}
-                      stroke={CRISIS_COLORS[index % CRISIS_COLORS.length]}
-                      strokeWidth={1.6}
-                      strokeDasharray="6 3"
-                      dot={false}
-                    />
-                  ))}
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
-
-            <TableCard>
-              <thead>
-                <tr>
-                  <Th>Scenariu istoric</Th>
-                  <Th>Status</Th>
-                  <Th>Start</Th>
-                  <Th>Valoare finală</Th>
-                  <Th>CAGR net</Th>
-                  <Th>Drawdown max</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {crisisScenarios.map((scenario) => (
-                  <tr key={scenario.start_year} className="border-t border-[var(--border)]">
-                    <Td>{scenario.label}</Td>
-                    <Td>
-                      {scenario.status === "available"
-                        ? "disponibil"
-                        : scenario.status === "insufficient_horizon"
-                          ? `istoric prea scurt (${scenario.months_available} luni)`
-                          : "fără istoric suficient"}
-                    </Td>
-                    <Td>{scenario.start_date ?? "—"}</Td>
-                    <Td>
-                      {scenario.final_net_value === null
-                        ? "—"
-                        : `${fmt(conv(realFactor(scenario.final_net_value)))} ${sym}`}
-                    </Td>
-                    <Td>
-                      {scenario.cagr_net === null
-                        ? "—"
-                        : `${fmt(scenario.cagr_net * 100, 2)}%`}
-                    </Td>
-                    <Td>
-                      {scenario.max_drawdown === null
-                        ? "—"
-                        : `${fmt(scenario.max_drawdown * 100, 1)}%`}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </TableCard>
 
             <Disclaimer modul="etf" />
             <DisclaimerNote>
@@ -811,6 +780,9 @@ export default function InvestitiiETF() {
           </section>
         );
       })()}
+          </div>
+        </div>
+      )}
 
       {result && (() => {
         const sym = currencySymbol(currency);

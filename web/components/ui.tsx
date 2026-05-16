@@ -120,7 +120,7 @@ export function Select<T extends string>({
   );
 }
 
-export function ProductPicker<T extends { id: string }>({
+export function ProductPicker<T extends { id: string | number }>({
   label,
   hint,
   items,
@@ -153,7 +153,7 @@ export function ProductPicker<T extends { id: string }>({
       >
         <option value="">— Manual (parametri custom) —</option>
         {items.map((it) => (
-          <option key={it.id} value={it.id}>
+          <option key={it.id} value={String(it.id)}>
             {renderLabel(it)}
           </option>
         ))}

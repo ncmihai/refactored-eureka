@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
 import { fetchAuthStatus } from "@/lib/simulari";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const tools = [
   {
@@ -154,6 +155,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {auth.authenticated && auth.user ? (
             <>
               <Link href="/simulari" className="btn-ghost text-sm">

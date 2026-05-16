@@ -1,5 +1,5 @@
 export type ProdusCredit = {
-  id: string;
+  id: string | number;
   nume: string;
   banca: string;
   tipDobanda: "fix" | "variabil" | "fix_variabil";
@@ -15,7 +15,7 @@ export type ProdusCredit = {
 };
 
 export type DobandaDepozit = {
-  id: string;
+  id: string | number;
   nume: string;
   banca: string;
   moneda: "EUR" | "RON" | "USD";
@@ -27,7 +27,7 @@ export type DobandaDepozit = {
 };
 
 export type FondETF = {
-  id: string;
+  id: string | number;
   nume: string;
   ticker: string;
   isin?: string | null;
@@ -49,7 +49,7 @@ export type FondETF = {
 };
 
 export type RandamentIndice = {
-  id: string;
+  id: string | number;
   nume: string;
   indice:
     | "SP500"
@@ -69,7 +69,7 @@ export type RandamentIndice = {
 };
 
 export type ProdusUL = {
-  id: string;
+  id: string | number;
   nume: string;
   provider: string;
   moneda: "EUR" | "RON" | "USD";
@@ -105,7 +105,7 @@ async function fetchCollection<T>(slug: string): Promise<T[]> {
 }
 
 export type Inflatie = {
-  id: string;
+  id: string | number;
   nume: string;
   moneda: "EUR" | "RON" | "USD";
   an: number;
@@ -115,7 +115,7 @@ export type Inflatie = {
 };
 
 export type Disclaimer = {
-  id: string;
+  id: string | number;
   nume: string;
   modul:
     | "general"
@@ -161,7 +161,7 @@ export const fetchDisclaimere = () =>
   fetchCollection<Disclaimer>("disclaimere");
 
 export type Curs = {
-  id: string;
+  id: string | number;
   pereche: "EUR_RON" | "USD_RON";
   data: string;
   curs: number;

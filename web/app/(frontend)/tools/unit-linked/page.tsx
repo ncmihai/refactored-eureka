@@ -109,7 +109,7 @@ export default function UnitLinkedPage() {
   const applyProduct = (id: string) => {
     setSelectedProductId(id);
     if (!id) return;
-    const product = products.find((x) => x.id === id);
+    const product = products.find((x) => String(x.id) === id);
     if (!product) return;
     setForm((f) => ({
       ...f,
@@ -132,7 +132,7 @@ export default function UnitLinkedPage() {
     value: (typeof form)[K],
   ) => setForm((f) => ({ ...f, [key]: value }));
 
-  const selectedProduct = products.find((x) => x.id === selectedProductId);
+  const selectedProduct = products.find((x) => String(x.id) === selectedProductId);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
