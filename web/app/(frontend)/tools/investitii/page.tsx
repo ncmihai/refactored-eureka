@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UnitLinkedTool } from "@/components/invest/UnitLinkedTool";
 import {
   fetchFonduriETF,
   fetchIndiciIstorici,
@@ -10,6 +11,8 @@ import {
 import indexReturnMetadata from "@/data/index-returns/metadata.json";
 import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
+import { hasBetaAccess, type AuthStatus } from "@/lib/auth";
+import { fetchAuthStatus } from "@/lib/simulari";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   Area,
@@ -162,6 +165,7 @@ const metadataForIndice = (
   );
 
 export default function InvestitiiETF() {
+  const [mode, setMode] = useState<"etf" | "ul">("etf");
   const [form, setForm] = useState({
     principal: 5000,
     months: 120,
@@ -209,12 +213,19 @@ export default function InvestitiiETF() {
     rateEurRon: 0,
     source: null,
   });
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "ul") {
+      setMode("ul");
+    }
     fetchFonduriETF().then(setFunds);
     fetchIndiciIstorici()
       .then(setIndexReturns)
       .finally(() => setIndexDataLoading(false));
+    fetchAuthStatus().then(setAuth).catch(() => {
+      setAuth({ authenticated: false, user: null });
+    });
   }, []);
 
   const availableIndices = Array.from(
@@ -256,6 +267,7 @@ export default function InvestitiiETF() {
       ? historicalMonthlyReturns
       : DEMO_MONTHLY_RETURNS;
   const canRunMonteCarlo = !indexDataLoading && !mcLoading;
+  const canUseMonteCarlo = auth?.user ? hasBetaAccess(auth.user) : false;
   const selectedFund = funds.find((x) => String(x.id) === selectedFundId);
 
   const applyFund = (id: string) => {
@@ -334,6 +346,14 @@ export default function InvestitiiETF() {
   };
 
   const runMonteCarlo = async () => {
+    if (!canUseMonteCarlo) {
+      setMcError(
+        auth?.authenticated
+          ? "Contul trebuie să fie activ pentru Monte Carlo."
+          : "Autentificarea este necesară pentru Monte Carlo.",
+      );
+      return;
+    }
     setMcLoading(true);
     setMcError(null);
     setMcResult(null);
@@ -356,7 +376,7 @@ export default function InvestitiiETF() {
         seed: mcForm.seed,
         target_value: mcForm.target_value,
       };
-      const res = await fetch(`${BACKEND_URL}/api/v1/investitii/monte-carlo`, {
+      const res = await fetch(`/api/investitii/monte-carlo/etf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -368,6 +388,7 @@ export default function InvestitiiETF() {
       setMcProductSnapshots(productSnapshots);
       setMcInputSnapshot({
         mode: "monte_carlo",
+        productType: "etf",
         form,
         mcForm,
         selectedFundId,
@@ -389,10 +410,32 @@ export default function InvestitiiETF() {
   return (
     <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-10">
       <PageHeader
-        eyebrow="Investiții · ETF / Fond"
-        title="Acumulare ETF: determinist sau Monte Carlo istoric."
-        description="Investiție inițială + contribuții lunare (DCA), TER, comisioane broker și impozit pe câștig. Modul Monte Carlo arată distribuții posibile, nu promisiuni de randament."
+        eyebrow="Investiții · ETF / Unit-Linked"
+        title="Acumulare investițională cu proiecții și Monte Carlo."
+        description="Alege ETF sau Unit-Linked, rulează determinist public, iar Monte Carlo rămâne sub-tool autentificat pentru consultanți. Rezultatele arată intervale și probabilități, nu promisiuni de randament."
       />
+
+      <div className="card p-2 inline-flex gap-2">
+        <button
+          type="button"
+          className={mode === "etf" ? "btn-primary" : "btn-secondary"}
+          onClick={() => setMode("etf")}
+        >
+          ETF
+        </button>
+        <button
+          type="button"
+          className={mode === "ul" ? "btn-primary" : "btn-secondary"}
+          onClick={() => setMode("ul")}
+        >
+          Unit-Linked
+        </button>
+      </div>
+
+      {mode === "ul" ? (
+        <UnitLinkedTool />
+      ) : (
+        <>
 
       <ProductPicker
         label="Fond ETF"
@@ -522,7 +565,7 @@ export default function InvestitiiETF() {
           </div>
           <button
             type="button"
-            disabled={!canRunMonteCarlo}
+            disabled={!canRunMonteCarlo || auth === null}
             className="btn-primary md:mt-1"
             onClick={runMonteCarlo}
           >
@@ -651,6 +694,12 @@ export default function InvestitiiETF() {
 
         {mcError && (
           <p className="text-sm text-[var(--danger)]">{mcError}</p>
+        )}
+        {!canUseMonteCarlo && (
+          <p className="text-sm text-[var(--muted)]">
+            Monte Carlo este disponibil pentru utilizatori autentificați cu cont activ.
+            Proiecția deterministă rămâne publică.
+          </p>
         )}
             </section>
 
@@ -1117,6 +1166,8 @@ export default function InvestitiiETF() {
           </section>
         );
       })()}
+        </>
+      )}
     </main>
   );
 }

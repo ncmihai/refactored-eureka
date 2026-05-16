@@ -13,7 +13,7 @@ export const ProduseUL: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'nume',
-    defaultColumns: ['nume', 'provider', 'moneda', 'adminFeeAnnual', 'activ'],
+    defaultColumns: ['nume', 'provider', 'moneda', 'underlyingIndex', 'adminFeeAnnual', 'activ'],
     description: 'Produse Unit-Linked parametrizate pentru simulator și comparator.',
     group: 'Date Piață',
   },
@@ -41,6 +41,24 @@ export const ProduseUL: CollectionConfig = {
     { name: 'initialUnitsMonths', type: 'number', required: true, defaultValue: 24 },
     { name: 'expenseRecoveryAnnual', type: 'number', required: true, defaultValue: 3 },
     { name: 'adminFeeAnnual', type: 'number', required: true, defaultValue: 1.29 },
+    {
+      name: 'underlyingIndex',
+      type: 'select',
+      required: true,
+      defaultValue: 'MSCI_WORLD',
+      options: [
+        { label: 'S&P 500', value: 'SP500' },
+        { label: 'MSCI World', value: 'MSCI_WORLD' },
+        { label: 'FTSE All-World', value: 'FTSE_ALL_WORLD' },
+        { label: 'STOXX Europe 600', value: 'STOXX_600' },
+        { label: 'BET', value: 'BET' },
+        { label: 'Other / custom', value: 'OTHER' },
+      ],
+      admin: {
+        description:
+          'Indice folosit pentru Monte Carlo UL. Pentru demo, MSCI World este default până la maparea produsului real.',
+      },
+    },
     {
       name: 'sourceUrl',
       type: 'text',

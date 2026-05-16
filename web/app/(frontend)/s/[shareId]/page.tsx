@@ -1,7 +1,7 @@
 import config from "@payload-config";
 import { notFound } from "next/navigation";
 import { getPayload } from "payload";
-import { CreditReport, OptimizareReport } from "@/components/reports/SavedSimulationReports";
+import { CreditReport, InvestmentReport, OptimizareReport } from "@/components/reports/SavedSimulationReports";
 import { TrustSnapshotPanel } from "@/components/reports/TrustSnapshotPanel";
 import { PageHeader } from "@/components/ui";
 import {
@@ -63,6 +63,8 @@ export default async function SharedSimulationPage({
         <CreditReport doc={doc} />
       ) : doc.tool === "optimizare" ? (
         <OptimizareReport doc={doc} />
+      ) : doc.tool === "investitii" || doc.tool === "unit_linked" ? (
+        <InvestmentReport doc={doc} />
       ) : (
         <div className="card p-6 text-sm text-[var(--muted)]">
           Raportul public detaliat este disponibil momentan pentru Credit și Optimizare.

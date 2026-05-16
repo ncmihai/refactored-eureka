@@ -55,11 +55,11 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [/] Sentry breadcrumbs pe `/api/simulari`, `/api/simulari/[id]/pdf`, importuri indici, Monte Carlo.
 
 ### 3 — Invest & Monte Carlo sub-tool
-- [ ] Rework Invest ca pagină principală deterministă: selectare tip investiție (`ETF`, `UL`, ulterior alte forme), produs/dataset, contribuție lunară, durată, taxe.
-- [ ] Buton `Rulează Monte Carlo` deschide sub-tool/modal cu parametrii deja preluați din Invest.
-- [ ] Monte Carlo folosește ETF-ul/indicele selectat, datasetul istoric aferent și cash-flow-ul existent.
-- [ ] Rezultatul MC comunică probabilități și intervale, nu promisiuni: P10/P50/P90, probabilitate pierdere, probabilitate target, scenarii istorice.
-- [ ] Copy consultant: scopul este reducerea anxietății prin context istoric și distribuții, fără afirmații garantate de tip „vei face bani”.
+- [x] Rework Invest ca pagină principală deterministă: selectare tip investiție (`ETF`, `UL`, ulterior alte forme), produs/dataset, contribuție lunară, durată, taxe.
+- [x] Buton `Rulează Monte Carlo` deschide sub-tool/modal cu parametrii deja preluați din Invest.
+- [x] Monte Carlo folosește ETF-ul/indicele selectat, datasetul istoric aferent și cash-flow-ul existent.
+- [x] Rezultatul MC comunică probabilități și intervale, nu promisiuni: P10/P50/P90, probabilitate pierdere, probabilitate target, scenarii istorice.
+- [x] Copy consultant: scopul este reducerea anxietății prin context istoric și distribuții, fără afirmații garantate de tip „vei face bani”.
 - [ ] PDF export pentru investiții rămâne blocat pentru proxy-uri nelicențiate până la matricea de licențiere.
 
 ### 4 — Reports brainstorm backlog
@@ -161,7 +161,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Navbar dropdown Tools (scalabil — click-outside + Escape + route-change auto-close)
 
 ### QA MVP
-- [/] `pytest` — suite paritate cu Excel. Curent: **89 teste verzi** local (11 BNR/cache + 6 credit + 16 optimizare + 18 depozit + 19 ETF deterministic + 12 Monte Carlo + 5 UL + 2 comparator). Target inițial ≥20/modul încă nu atins pe credit/depozit.
+- [/] `pytest` — suite paritate cu Excel. Curent: **96 teste verzi** local (include UL Monte Carlo + testele existente BNR/cache, credit, optimizare, depozit, ETF, comparator). Target inițial ≥20/modul încă nu atins pe credit/depozit.
 - [ ] Property-based tests (Hypothesis) pentru invarianți credit
 - [ ] Playwright E2E — flow „consultant deschide sesiune → credit → PDF”
 
@@ -213,11 +213,15 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 ### Faza 2C — Unit-Linked stand-alone
 - [x] Colecție CMS `Produse_UL` — taxe alocare, taxe administrare, recuperare cheltuieli inițiale, găleți unități, asigurare fixă, durate, effectiveFrom/To, versions
+- [x] `Produse_UL.underlyingIndex` — mapare către dataseturile istorice (`SP500`, `MSCI_WORLD`, `FTSE_ALL_WORLD`, `STOXX_600`, `BET`, `OTHER`) pentru Monte Carlo UL
 - [x] Seed primul produs UL demonstrativ (Allianz Dinamic Invest style) ca „exemplu generic” până la clarificarea licenței
 - [x] Motor UL deterministic în backend — cash-flow lunar, unități inițiale/acumulare, taxe pe sold, taxe fixe, randament net
+- [x] Motor UL Monte Carlo — block bootstrap pe randamente istorice, taxele produsului aplicate pe fiecare traseu, P10/P50/P90, probabilitate pierdere/target, fee drag și scenarii criză
 - [x] Endpoint `POST /api/v1/unit-linked/simulate`
+- [x] Endpoint `POST /api/v1/unit-linked/monte-carlo` + proxy Next login-only `/api/investitii/monte-carlo/unit-linked`
 - [x] UI `tools/unit-linked` — formular, produs CMS dropdown, grafic sold vs contribuții, defalcare taxe, disclaimer MiFID/insurance
-- [x] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length
+- [x] UI `tools/unit-linked` mutat compatibil prin redirect către hub-ul `/tools/investitii?mode=ul`
+- [x] Teste paritate/invarianți UL: contribuții brute/net investite, taxe totale, sold final, zero-return, zero-fee, schedule length, Monte Carlo determinism/percentile/fallback
 - [x] Capture analytics `captureSimulation("unit_linked")` + breakdown separat în admin dashboard PostHog
 
 ### Faza 2D — Comparator investițional 3-way

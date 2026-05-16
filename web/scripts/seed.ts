@@ -300,6 +300,7 @@ const produseUl = [
     initialUnitsMonths: 24,
     expenseRecoveryAnnual: 3,
     adminFeeAnnual: 1.29,
+    underlyingIndex: 'MSCI_WORLD' as const,
     sourceUrl: 'https://example.com/ul-demo',
     note:
       'Produs demonstrativ până la clarificarea licențierii parametrilor Allianz Dinamic Invest.',

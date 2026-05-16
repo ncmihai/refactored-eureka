@@ -80,6 +80,13 @@ export type ProdusUL = {
   initialUnitsMonths: number;
   expenseRecoveryAnnual: number;
   adminFeeAnnual: number;
+  underlyingIndex:
+    | "SP500"
+    | "MSCI_WORLD"
+    | "FTSE_ALL_WORLD"
+    | "STOXX_600"
+    | "BET"
+    | "OTHER";
   sourceUrl?: string | null;
   activ: boolean;
 };
