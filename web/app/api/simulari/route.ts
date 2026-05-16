@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
   if (user.role !== "super_admin" && user.accountStatus && user.accountStatus !== "active") {
-    return NextResponse.json({ error: "account_pending_approval" }, { status: 403 });
+    return NextResponse.json({ error: "account_not_active" }, { status: 403 });
   }
 
   const readWhere = simulariReadWhereForUser(user);
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "login_required" }, { status: 401 });
   }
   if (user.role !== "super_admin" && user.accountStatus && user.accountStatus !== "active") {
-    return NextResponse.json({ error: "account_pending_approval" }, { status: 403 });
+    return NextResponse.json({ error: "account_not_active" }, { status: 403 });
   }
 
   const body = await req.json();

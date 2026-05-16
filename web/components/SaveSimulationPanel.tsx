@@ -19,6 +19,7 @@ function saveErrorMessage(message: string) {
     invalid_tool: "Unealta curentă nu poate fi salvată.",
     missing_snapshot: "Lipsește snapshot-ul simulării. Rulează din nou simularea și încearcă salvarea.",
     account_pending_approval: "Contul este în așteptare. Un Super Admin trebuie să aprobe accesul înainte de salvare.",
+    account_not_active: "Contul nu este activ. Un Super Admin trebuie să aprobe sau să reactiveze accesul.",
     "HTTP 500": "Nu am putut salva simularea. Verifică sesiunea de admin și reîncearcă.",
   };
   return map[message] ?? (message.startsWith("HTTP 5") ? map["HTTP 500"] : message);
@@ -76,7 +77,7 @@ export function SaveSimulationPanel({
       return;
     }
     if (auth?.user && !hasBetaAccess(auth.user)) {
-      setError(saveErrorMessage("account_pending_approval"));
+      setError(saveErrorMessage("account_not_active"));
       return;
     }
     setSaving(true);
