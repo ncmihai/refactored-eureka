@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     redis_url: str = ""
     sentry_dsn: str = ""
     allowed_origins: str = "http://localhost:3000"
+    enable_debug_routes: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

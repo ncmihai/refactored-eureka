@@ -59,6 +59,18 @@ Izolare **per-firm** în DB (fiecare rând are `firm_id`, enforced via row-level
 | **Consultant** | Folosește uneltele, salvează simulări cu pseudonim client, generează PDF-uri cu logo-ul firmei, reia sesiuni via link. |
 | **Guest (public)** | Folosește uneltele fără login. NU poate salva sesiune. Poate descărca PDF cu disclaimer explicit „Simulare educativă — nu constituie sfat financiar”. |
 
+### 3.1 Commercial beta onboarding
+
+Pentru beta comercială, fluxul pragmatic este:
+1. **Super Admin creează manual firma și primul Admin Firmă** în Payload admin.
+2. **Admin Firmă invită sau propune membrii echipei** din admin page.
+3. **Super Admin aprobă** utilizatorii noi înainte să primească acces efectiv la firmă.
+
+Modelul trebuie să rămână ușor de schimbat:
+- `pending_approval` pentru invitații/useri neaprobați.
+- `approvedBy`, `approvedAt`, `invitedBy` pentru audit.
+- Se poate trece mai târziu la auto-approval pentru firme plătitoare, fără rescrierea rolurilor.
+
 ---
 
 ## 4. Internaționalizare
@@ -85,6 +97,14 @@ Izolare **per-firm** în DB (fiecare rând are `firm_id`, enforced via row-level
 - Despre
 - Login (B2B)
 
+### C. App navigation beta
+
+Pe măsură ce apar mai multe pagini, navbar-ul public nu trebuie să devină aglomerat. Direcție beta:
+- Header public simplu: brand + meniu tools/app + login/profile.
+- Dark theme toggle mutat din header într-un footer/settings menu.
+- Pentru useri autentificați, meniul afișează rolul, firma, `Simulări`, admin și acțiunile relevante.
+- Pentru guest, controalele SaaS sunt ascunse sau explicate discret, nu blochează fluxul calculatorului.
+
 ---
 
 ## 6. Module (Tools)
@@ -99,7 +119,7 @@ Fiecare unealtă respectă standard de date și include:
 ### 6.1 Investiții & Acumulare
 1. **Depozit Bancar (Termen Scurt)** — dobândă compusă lunară, impozit 10% pe dobândă, comisioane de administrare. Preluat din Excel „Termen Scurt”.
 2. **Simulator Unit-Linked** (Stand-alone) — „Happy Path” pentru UL (Allianz Dinamic Invest, NN, Aegon). Parametri definiți din CMS, nu în cod.
-3. **Simulator ETF** (Stand-alone) — proiecție cu TER + Monte Carlo historical bootstrap.
+3. **Simulator ETF** (Stand-alone) — proiecție deterministă cu TER; Monte Carlo este sub-tool lansat din aceiași parametri.
 4. **Comparator Suprem (UL / ETF / Depozit)** — side-by-side cu TCO, Sharpe Ratio, Regula 72, fan chart P10/P50/P90.
 
 ### 6.2 Credite
@@ -148,6 +168,10 @@ Pilonul modularității — zero cod când se adaugă un produs nou.
 - **Metodă:** block bootstrap cu blocuri de 12 luni (păstrează autocorelațiile de regim — dot-com, 2008, COVID, stagflația '70).
 - **Output:** fan chart P10/P50/P90 + scenarii „cel mai rău caz istoric” (start în 1929, 1999, 2000, 2008).
 - **Iterații:** 10.000 per run.
+
+**Poziționare UX:** Monte Carlo nu rulează implicit pe pagina principală de investiții. Consultantul setează întâi planul determinist (ETF/UL/altă formă, produs, contribuție, durată), apoi apasă `Rulează Monte Carlo`. Sub-tool-ul preia parametrii existenți și adaugă distribuții/probabilități bazate pe datasetul istoric al ETF-ului/indicelui selectat.
+
+**Poziționare comercială:** scopul Monte Carlo este să reducă anxietatea prin context istoric, scenarii și probabilități. Nu promite randament. Mesajul corect este: „în majoritatea traseelor istorice similare planul are rezultat pozitiv, dar există intervale de risc și pierdere temporară/permanentă”. Afirmațiile de tip „vei face bani” rămân interzise în UI/PDF.
 
 ### 8.3 Cache & Performanță
 - Array-urile istorice de randamente → Redis, TTL 24h, încărcate o dată din DB la startup.

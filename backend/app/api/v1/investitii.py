@@ -1,8 +1,9 @@
 from decimal import Decimal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from app.api.v1.schemas import APIModel
 from app.finance.investitii import (
     InvestitieInput,
     MonteCarloInput,
@@ -13,7 +14,7 @@ from app.finance.investitii import (
 router = APIRouter(prefix="/investitii", tags=["investitii"])
 
 
-class InvestitieRequest(BaseModel):
+class InvestitieRequest(APIModel):
     principal: Decimal = Field(..., ge=0)
     months: int = Field(..., gt=0, le=720)
     monthly_contribution: Decimal = Field(Decimal("0"), ge=0)
@@ -24,7 +25,7 @@ class InvestitieRequest(BaseModel):
     holding_tax: Decimal = Field(Decimal("0.10"), ge=0, le=1)
 
 
-class InvestitieRowResponse(BaseModel):
+class InvestitieRowResponse(APIModel):
     month: int
     opening_balance: Decimal
     contribution_gross: Decimal
@@ -34,7 +35,7 @@ class InvestitieRowResponse(BaseModel):
     closing_balance: Decimal
 
 
-class InvestitieResponse(BaseModel):
+class InvestitieResponse(APIModel):
     schedule: list[InvestitieRowResponse]
     total_contributions_gross: Decimal
     total_contributions_net: Decimal
@@ -48,7 +49,7 @@ class InvestitieResponse(BaseModel):
     effective_annual_return: Decimal
 
 
-class MonteCarloRequest(BaseModel):
+class MonteCarloRequest(APIModel):
     principal: Decimal = Field(..., ge=0)
     months: int = Field(..., gt=0, le=720)
     monthly_contribution: Decimal = Field(Decimal("0"), ge=0)
@@ -80,7 +81,7 @@ class MonteCarloRequest(BaseModel):
         return self
 
 
-class MonteCarloPercentileResponse(BaseModel):
+class MonteCarloPercentileResponse(APIModel):
     month: int
     p10: float
     p25: float
@@ -89,7 +90,7 @@ class MonteCarloPercentileResponse(BaseModel):
     p90: float
 
 
-class MonteCarloDistributionResponse(BaseModel):
+class MonteCarloDistributionResponse(APIModel):
     p10: float
     p25: float
     p50: float
@@ -97,12 +98,12 @@ class MonteCarloDistributionResponse(BaseModel):
     p90: float
 
 
-class MonteCarloCrisisPointResponse(BaseModel):
+class MonteCarloCrisisPointResponse(APIModel):
     month: int
     value: float
 
 
-class MonteCarloCrisisScenarioResponse(BaseModel):
+class MonteCarloCrisisScenarioResponse(APIModel):
     label: str
     start_year: int
     status: str
@@ -114,7 +115,7 @@ class MonteCarloCrisisScenarioResponse(BaseModel):
     line: list[MonteCarloCrisisPointResponse]
 
 
-class MonteCarloResponse(BaseModel):
+class MonteCarloResponse(APIModel):
     percentiles: list[MonteCarloPercentileResponse]
     final_distribution: MonteCarloDistributionResponse
     probability_of_loss: float
@@ -136,57 +137,10 @@ class MonteCarloResponse(BaseModel):
 @router.post("/simulate", response_model=InvestitieResponse)
 def simulate(req: InvestitieRequest) -> InvestitieResponse:
     result = simulate_investitie(InvestitieInput(**req.model_dump()))
-    return InvestitieResponse(
-        schedule=[InvestitieRowResponse(**row.__dict__) for row in result.schedule],
-        total_contributions_gross=result.total_contributions_gross,
-        total_contributions_net=result.total_contributions_net,
-        total_broker_fees=result.total_broker_fees,
-        gross_value_final=result.gross_value_final,
-        gross_gain=result.gross_gain,
-        tax=result.tax,
-        net_value_final=result.net_value_final,
-        net_gain=result.net_gain,
-        cagr_net=result.cagr_net,
-        effective_annual_return=result.effective_annual_return,
-    )
+    return InvestitieResponse.model_validate(result)
 
 
 @router.post("/monte-carlo", response_model=MonteCarloResponse)
 def simulate_monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
     result = simulate_investitie_monte_carlo(MonteCarloInput(**req.model_dump()))
-    return MonteCarloResponse(
-        percentiles=[
-            MonteCarloPercentileResponse(**row.__dict__) for row in result.percentiles
-        ],
-        final_distribution=MonteCarloDistributionResponse(**result.final_distribution.__dict__),
-        probability_of_loss=result.probability_of_loss,
-        probability_target_reached=result.probability_target_reached,
-        cagr_median_net=result.cagr_median_net,
-        annualized_volatility_median=result.annualized_volatility_median,
-        sharpe_median=result.sharpe_median,
-        max_drawdown_median=result.max_drawdown_median,
-        iterations=result.iterations,
-        block_size=result.block_size,
-        months=result.months,
-        seed=result.seed,
-        total_contributions_gross=result.total_contributions_gross,
-        total_contributions_net=result.total_contributions_net,
-        total_broker_fees=result.total_broker_fees,
-        crisis_scenarios=[
-            MonteCarloCrisisScenarioResponse(
-                label=scenario.label,
-                start_year=scenario.start_year,
-                status=scenario.status,
-                start_date=scenario.start_date,
-                months_available=scenario.months_available,
-                final_net_value=scenario.final_net_value,
-                cagr_net=scenario.cagr_net,
-                max_drawdown=scenario.max_drawdown,
-                line=[
-                    MonteCarloCrisisPointResponse(**point.__dict__)
-                    for point in scenario.line
-                ],
-            )
-            for scenario in result.crisis_scenarios
-        ],
-    )
+    return MonteCarloResponse.model_validate(result)

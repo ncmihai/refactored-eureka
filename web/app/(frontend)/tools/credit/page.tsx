@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { fetchProduseCredit, type ProdusCredit } from "@/lib/cms";
+import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import { Disclaimer } from "@/components/Disclaimer";
@@ -62,12 +63,6 @@ type CreditResponse = {
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 const DEFAULT_IRCC_RATE = 5.8;
-
-const fmt = (v: string | number, digits = 2) =>
-  Number(v).toLocaleString("ro-RO", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
 
 export default function CreditSimulator() {
   const [form, setForm] = useState({

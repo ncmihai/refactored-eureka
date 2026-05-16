@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 
+from .common import annualized_return, tax_on_positive_gain
+
 getcontext().prec = 28
 
 
@@ -152,16 +154,9 @@ def simulate_unit_linked(inp: UnitLinkedInput) -> UnitLinkedResult:
 
     gross_value = initial_units_balance + accumulation_units_balance
     gross_gain = gross_value - total_invested
-    tax = gross_gain * inp.holding_tax if gross_gain > 0 else Decimal("0")
+    tax = tax_on_positive_gain(gross_gain, inp.holding_tax)
     net_value = gross_value - tax
     net_gain = net_value - total_premiums
-
-    years = Decimal(inp.months) / Decimal("12")
-    cagr = (
-        (net_value / total_premiums) ** (Decimal("1") / years) - Decimal("1")
-        if total_premiums > 0
-        else Decimal("0")
-    )
 
     return UnitLinkedResult(
         schedule=schedule,
@@ -175,5 +170,5 @@ def simulate_unit_linked(inp: UnitLinkedInput) -> UnitLinkedResult:
         tax=tax,
         net_value_final=net_value,
         net_gain=net_gain,
-        cagr_net=cagr,
+        cagr_net=annualized_return(net_value, total_premiums, inp.months),
     )

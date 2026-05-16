@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchDobanziDepozit, type DobandaDepozit } from "@/lib/cms";
+import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
@@ -58,12 +59,6 @@ type DepozitResponse = {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
-
-const fmt = (v: string | number, digits = 2) =>
-  Number(v).toLocaleString("ro-RO", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
 
 export default function DepozitBancar() {
   const [form, setForm] = useState({

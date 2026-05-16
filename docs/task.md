@@ -27,6 +27,61 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 
 ---
 
+## Next attack plan — Cleanup → Commercial Beta Core
+
+**Context 2026-05-16:** PDF export și saved simulations sunt funcționale în producție pentru Credit + Optimizare. Următorul pas nu este încă un calculator nou, ci curățenie, admin comercial și încredere operațională.
+
+### 0 — Cleanup înainte de feature work
+- [/] Audit redundanță frontend: helpers duplicate `fmt/num/relation/product`, report rendering duplicat, snapshot parsing în PDF/share/UI.
+- [/] Audit redundanță backend: contracte output comune, metrici reutilizabile, mapping input pentru tools.
+- [/] Consolidare tipuri raport/simulare: un singur layer shared pentru Credit/Optimizare/Invest/UL unde e realist.
+- [/] Curățare feature flags / TODO vechi / debug scripts temporare; păstrare doar scripts utile (`check:simulari-access`, importuri date).
+- [ ] Decide folder standard pentru migrations (`web/scripts/migrations`) și regulă: orice hotfix Neon manual intră în repo în aceeași zi.
+- [ ] Smoke script producție: login test → save Credit → share → PDF; login test → save Optimizare → share → PDF.
+
+### 1 — Commercial beta admin flow
+- [ ] Super Admin creează firma + primul Admin Firmă manual din Payload admin pentru beta inițial.
+- [ ] Admin Firmă poate propune/invita membri ai echipei din admin page.
+- [ ] Membrii invitați intră în status `pending_approval` până când Super Admin aprobă.
+- [ ] După aprobare, userul devine `consultant` sau `admin_firma` în firma respectivă.
+- [ ] UI admin: listă „Invitații în așteptare” pentru Super Admin, cu approve/reject.
+- [ ] Model flexibil pentru viitor: câmpuri `status`, `approvedBy`, `approvedAt`, `invitedBy`, fără a bloca schimbarea către auto-approval pe abonamente plătite.
+
+### 2 — Trust layer
+- [ ] Audit log pentru acțiuni sensibile: user creat/aprobat, rol schimbat, firmă modificată, produs modificat, disclaimer modificat, PDF exportat.
+- [ ] Disclaimer version pe fiecare simulare/PDF, nu doar text curent.
+- [ ] Source/freshness badges pe date: produs, FX, inflație, indice istoric, proxy/licență.
+- [ ] Bloc „Assumptions” salvat în snapshot și afișat pe share page/PDF.
+- [ ] Sentry breadcrumbs pe `/api/simulari`, `/api/simulari/[id]/pdf`, importuri indici, Monte Carlo.
+
+### 3 — Invest & Monte Carlo sub-tool
+- [ ] Rework Invest ca pagină principală deterministă: selectare tip investiție (`ETF`, `UL`, ulterior alte forme), produs/dataset, contribuție lunară, durată, taxe.
+- [ ] Buton `Rulează Monte Carlo` deschide sub-tool/modal cu parametrii deja preluați din Invest.
+- [ ] Monte Carlo folosește ETF-ul/indicele selectat, datasetul istoric aferent și cash-flow-ul existent.
+- [ ] Rezultatul MC comunică probabilități și intervale, nu promisiuni: P10/P50/P90, probabilitate pierdere, probabilitate target, scenarii istorice.
+- [ ] Copy consultant: scopul este reducerea anxietății prin context istoric și distribuții, fără afirmații garantate de tip „vei face bani”.
+- [ ] PDF export pentru investiții rămâne blocat pentru proxy-uri nelicențiate până la matricea de licențiere.
+
+### 4 — Reports brainstorm backlog
+- [ ] PDF Credit v2: oglindește pagina curentă — parametri, info blocks, grafic, scadențar complet, notes consultant.
+- [ ] PDF Optimizare v2: include explicație decizională mai clară, assumptions, chart/table parity cu web.
+- [ ] Share pages: mod client-friendly + consultant notes + „generated at / hash / disclaimer version”.
+- [ ] Export templates versionate (`pdfVersion`) cu changelog intern.
+- [ ] Manual QA PDF: 120/360 luni, mobile share page, dark/light screenshots.
+
+### 5 — UX/nav rework
+- [ ] Scoate dark toggle din header principal; mută în footer sau într-un app/settings menu.
+- [ ] Rework Tools dropdown într-un hamburger/app menu în partea dreaptă când numărul de pagini crește.
+- [ ] Guest vede doar unelte publice; controalele SaaS apar doar după login.
+- [ ] Logged-in header afișează nume, rol, firmă și intrări către `Simulări`/Admin.
+- [ ] Save panel devine action bar compact după rezultate, nu card mare care aglomerează.
+
+### 6 — Engineering hardening
+- [ ] Payload migrations controlate: dev branch → validate → prod; fără schema drift manual nedocumentat.
+- [ ] Integrare test acces cu date reale/staging pentru guest, consultant, admin firmă, super admin.
+- [ ] Rate limiting pe Monte Carlo și endpointuri publice.
+- [ ] Backup/restore drill Neon înainte de primul client beta extern.
+
 ## Next up — Faza 1 (MVP, cost 0 €)
 
 ### Infra & Setup
@@ -39,7 +94,7 @@ Task-urile sunt grupate pe faze (vezi `planning.md §15`).
 - [x] Rotate Neon password — ALTER ROLE + env vars rotite pe Vercel (3/3 envs) + local
 - [x] Upstash Redis instance — `eu-central-1`, TLS, wire cache layer în FastAPI, `/health/redis` reachable în prod
 - [x] Endpoint BNR `/api/v1/bnr/rates` — 1h TTL fresh + 30d stale-while-revalidate, multiplier-aware parsing, 6.2× speedup (222ms → 36ms local, <5ms Render↔Upstash)
-- [x] Setup Sentry (FE + BE) — BE FastAPI (`telemetry.py`, FastApi/Starlette/Httpx integrations, 10% sampling, PII off), FE Next.js 16 App Router (`@sentry/nextjs` 10.49, instrumentation.ts + instrumentation-client.ts, sentry.{server,edge}.config.ts, global-error.tsx, `withSentryConfig` cu tunnelRoute `/monitoring` + source-maps upload), DSN-uri setate pe Vercel (3 scope-uri) + Render, ingestion verificată cap-coadă (backend `/debug/sentry-crash` + FE throw)
+- [x] Setup Sentry (FE + BE) — BE FastAPI (`telemetry.py`, FastApi/Starlette/Httpx integrations, 10% sampling, PII off), FE Next.js 16 App Router (`@sentry/nextjs` 10.49, instrumentation.ts + instrumentation-client.ts, sentry.{server,edge}.config.ts, global-error.tsx, `withSentryConfig` cu tunnelRoute `/monitoring` + source-maps upload), DSN-uri setate pe Vercel (3 scope-uri) + Render, ingestion verificată cap-coadă (backend `/debug/sentry-crash`, acum opt-in prin `ENABLE_DEBUG_ROUTES`, + FE throw)
 - [x] PostHog (product analytics) — EU cloud, `person_profiles: 'identified_only'`, autocapture off, replay off, respect_dnt, `captureSimulation()` pe cele 4 tool-uri, pageview manual pe router transition. `lib/posthog.ts` centralizat (niciun alt fișier nu importă `posthog-js`).
 - [x] GitHub CI (lint, pytest, type-check) — `.github/workflows/ci.yml`, 2 job-uri paralele (ruff+mypy+pytest backend, tsc frontend), concurrency cancel-in-progress, rulează pe push+PR, verde în ~46s
 - [x] Neon branching dev — branch `dev` (id `br-old-recipe-al9j8dru`) creat din `production`, `.env.local` local pointează pe dev, Vercel rămâne pe prod; `.env.example` actualizat cu instrucțiuni

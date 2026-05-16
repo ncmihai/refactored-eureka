@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 from enum import Enum
 
+from .common import annualized_return
+
 getcontext().prec = 28
 
 
@@ -113,13 +115,6 @@ def simulate_depozit(inp: DepozitInput) -> DepozitResult:
 
     total_net = total_gross - total_tax
 
-    if total_contributions > 0 and inp.months > 0:
-        years = Decimal(inp.months) / Decimal("12")
-        ratio = (balance / total_contributions) ** (Decimal("1") / years) - Decimal("1")
-        effective_yield = ratio
-    else:
-        effective_yield = Decimal("0")
-
     return DepozitResult(
         schedule=schedule,
         total_contributions=total_contributions,
@@ -127,5 +122,9 @@ def simulate_depozit(inp: DepozitInput) -> DepozitResult:
         total_tax=total_tax,
         total_net_interest=total_net,
         final_balance=balance,
-        effective_annual_yield_net=effective_yield,
+        effective_annual_yield_net=annualized_return(
+            balance,
+            total_contributions,
+            inp.months,
+        ),
     )

@@ -4,6 +4,50 @@ Jurnal cronologic al pașilor concreți făcuți pe proiect. Entry-urile nu se �
 
 ---
 
+## 2026-05-16 — Cleanup pass 1: report helpers, formatters, debug routes
+
+### Cod curățat
+- Consolidat helpers de raport/PDF: `web/lib/pdf.ts` folosește acum `web/lib/report-data.ts` pentru snapshot parsing, relații și tipuri comune Credit/Optimizare.
+- Adăugat `web/lib/format.ts` ca formatter numeric comun și înlocuit formattere locale din paginile tool-urilor.
+- Mutat primitivele de raport public (`InfoGrid`, `ReportChart`, Credit/Optimizare report blocks) în `web/components/reports`, astfel încât `/s/[shareId]` rămâne doar shell + data loading.
+- Separat generatorul PDF în module mici: `web/lib/pdf/canvas.ts`, `constants.ts`, `primitives.ts`, `credit-report.ts`, `optimizare-report.ts`, `fallback-report.ts`; `web/lib/pdf.ts` rămâne fațada publică pentru API route.
+- Adăugat `web/lib/report-view-models.ts`: Credit/Optimizare au acum un singur layer pentru valori derivate folosite și în share page, și în PDF (rate inițiale/revizuite, chart rows, total effort, recommendation copy).
+- Eliminat endpointul API raw JSON nefolosit `/api/simulari/share/[shareId]`; share page-ul public `/s/[shareId]` rămâne interfața client-facing.
+- Gated ruta backend `/debug/sentry-crash` în spatele `ENABLE_DEBUG_ROUTES=false`, ca să nu rămână endpoint public de crash în producție.
+- Adăugat `backend/app/api/v1/schemas.py`: base schema comun pentru serializare directă din dataclass-uri finance + request base comun Credit/Optimizare.
+- Adăugat `backend/app/finance/common.py`: helpers reutilizabili pentru taxă pe câștig pozitiv și randament anualizat; folosit în Depozit, ETF, UL și Optimizare.
+
+### Verificare
+- `npx tsc --noEmit` în `web` — verde.
+- Smoke local `buildSimulationPdf()` pentru Credit — buffer generat + hash 64 caractere după split PDF și după view-model refactor.
+- `./.venv/bin/pytest` în `backend` — 89 teste verzi.
+- `./.venv/bin/ruff check app` în `backend` — verde.
+- `./.venv/bin/mypy app` în `backend` — verde.
+
+---
+
+## 2026-05-16 — Brainstorm post-PDF: cleanup, beta admin, trust, Monte Carlo sub-tool
+
+### Context
+- Saved simulations, share pages și PDF export Credit/Optimizare funcționează în producție.
+- Neon schema drift pentru `simulari` a fost corectat: coloanele `id` au fost convertite din identity în sequence-backed defaults compatibile cu Payload.
+- Următoarea etapă trebuie să împingă platforma către beta comercială, nu către încă un calculator.
+
+### Decizii produs
+- **Cleanup înainte de feature work:** înainte de onboarding/invitații, facem audit de redundanță în codebase: helpers duplicate, snapshot parsing, chart/report code, scripts temporare, migrations discipline.
+- **Commercial beta admin flow:** pentru primele firme, Super Admin creează manual firma și primul Admin Firmă. Admin Firmă poate propune/invita oamenii din echipă, dar accesul devine activ doar după approve de la Super Admin. Modelul trebuie să rămână ușor de schimbat mai târziu.
+- **Trust layer:** audit log, disclaimer version, source/freshness badges, assumptions blocks și Sentry breadcrumbs devin priorități de beta.
+- **Invest/Monte Carlo:** Monte Carlo rămâne sub-tool legat de parametrii deja setați în Invest. Consultantul selectează ETF/UL/altă formă, produs/dataset, contribuție și durată, apoi apasă `Rulează Monte Carlo`.
+- **Poziționare Monte Carlo:** scopul este să reducă anxietatea prin probabilități și context istoric, nu să promită randament. Copy-ul trebuie să evite afirmații de tip „vei face bani”.
+- **UX/nav:** dark toggle iese din header; tools devine app/hamburger menu scalabil; controalele SaaS sunt role-aware și mai puțin vizibile pentru guest.
+- **Reports:** PDF-urile sunt suficient de bune pentru moment; problemele mici se tratează ulterior. Următoarea îmbunătățire majoră este paritate web/PDF + notes/assumptions.
+
+### Docs actualizate
+- `docs/task.md`: adăugat `Next attack plan — Cleanup → Commercial Beta Core`.
+- `docs/planning.md`: adăugat `Commercial beta onboarding`, `App navigation beta`, și poziționarea Monte Carlo ca sub-tool.
+
+---
+
 ## 2026-04-17 — Kickoff & Planning
 
 ### Structura inițială

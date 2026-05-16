@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 
+from .common import tax_on_positive_gain
 from .credit import (
     CreditInput,
     PrepaymentMode,
@@ -114,7 +115,7 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
     contributions = inp.monthly_extra * Decimal(inp.months)
     final_gross = invest_values[-1] if invest_values else Decimal("0")
     gain = final_gross - contributions
-    tax = gain * inp.investment_tax_rate if gain > 0 else Decimal("0")
+    tax = tax_on_positive_gain(gain, inp.investment_tax_rate)
     scen_b_net = final_gross - tax
     scen_b_gain_net = gain - tax
 
@@ -145,7 +146,7 @@ def simulate_optimizare(inp: OptimizareInput) -> OptimizareResult:
         b_invest = invest_values[idx]
         b_contrib = inp.monthly_extra * Decimal(end_month)
         b_gain = b_invest - b_contrib
-        b_tax = b_gain * inp.investment_tax_rate if b_gain > 0 else Decimal("0")
+        b_tax = tax_on_positive_gain(b_gain, inp.investment_tax_rate)
         b_net = b_invest - b_tax
         b_gain_net = b_gain - b_tax
 

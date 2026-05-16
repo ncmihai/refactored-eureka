@@ -16,7 +16,7 @@
  * - `tool_simulation_ran` — a consultant ran the math for one of the tools.
  *                           Property: `tool` is a route-aligned slug.
  *                           NO input values are sent — only the fact it happened.
- * - `tool_pdf_exported`   — reserved for PDF v1 (not yet wired).
+ * - `tool_pdf_exported`   — a logged-in user clicked a saved-simulation PDF export.
  *
  * Dual init (boot + opt-in)
  * -------------------------
@@ -139,8 +139,7 @@ export function captureSimulation(tool: ToolSlug): void {
 }
 
 /**
- * Record that a user exported a PDF for a tool. Reserved for PDF v1; wire
- * from the same place the PDF generation kicks off.
+ * Record that a user clicked a PDF export for a saved simulation.
  */
 export function capturePdfExport(tool: ToolSlug): void {
   if (!booted) return;

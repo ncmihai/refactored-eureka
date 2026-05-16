@@ -1,8 +1,9 @@
 from decimal import Decimal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.api.v1.schemas import APIModel
 from app.finance.depozit import (
     CapitalizationMode,
     DepozitInput,
@@ -12,7 +13,7 @@ from app.finance.depozit import (
 router = APIRouter(prefix="/depozit", tags=["depozit"])
 
 
-class DepozitRequest(BaseModel):
+class DepozitRequest(APIModel):
     principal: Decimal = Field(..., ge=0)
     months: int = Field(..., gt=0, le=600)
     annual_rate: Decimal = Field(..., ge=0, le=1)
@@ -21,7 +22,7 @@ class DepozitRequest(BaseModel):
     capitalization: CapitalizationMode = CapitalizationMode.MONTHLY
 
 
-class DepozitRowResponse(BaseModel):
+class DepozitRowResponse(APIModel):
     month: int
     opening_balance: Decimal
     contribution: Decimal
@@ -31,7 +32,7 @@ class DepozitRowResponse(BaseModel):
     closing_balance: Decimal
 
 
-class DepozitResponse(BaseModel):
+class DepozitResponse(APIModel):
     schedule: list[DepozitRowResponse]
     total_contributions: Decimal
     total_gross_interest: Decimal
@@ -44,12 +45,4 @@ class DepozitResponse(BaseModel):
 @router.post("/simulate", response_model=DepozitResponse)
 def simulate(req: DepozitRequest) -> DepozitResponse:
     result = simulate_depozit(DepozitInput(**req.model_dump()))
-    return DepozitResponse(
-        schedule=[DepozitRowResponse(**row.__dict__) for row in result.schedule],
-        total_contributions=result.total_contributions,
-        total_gross_interest=result.total_gross_interest,
-        total_tax=result.total_tax,
-        total_net_interest=result.total_net_interest,
-        final_balance=result.final_balance,
-        effective_annual_yield_net=result.effective_annual_yield_net,
-    )
+    return DepozitResponse.model_validate(result)

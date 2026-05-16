@@ -49,8 +49,9 @@ def health_sentry() -> dict[str, bool]:
     return {"configured": bool(settings.sentry_dsn), "enabled": _sentry_enabled}
 
 
-@app.get("/debug/sentry-crash")
-def sentry_crash() -> None:
-    """Force an uncaught exception — used once per deploy to verify Sentry wiring.
-    Remove or guard behind an admin flag after setup is confirmed working."""
-    raise RuntimeError("Sentry wiring test — if you see this in Sentry, it works.")
+if settings.enable_debug_routes:
+
+    @app.get("/debug/sentry-crash")
+    def sentry_crash() -> None:
+        """Force an uncaught exception when debug routes are explicitly enabled."""
+        raise RuntimeError("Sentry wiring test — if you see this in Sentry, it works.")

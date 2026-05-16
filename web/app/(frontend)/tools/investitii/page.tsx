@@ -8,6 +8,7 @@ import {
   type RandamentIndice,
 } from "@/lib/cms";
 import indexReturnMetadata from "@/data/index-returns/metadata.json";
+import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
@@ -116,12 +117,6 @@ type MonteCarloResponse = {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
-
-const fmt = (v: string | number, digits = 2) =>
-  Number(v).toLocaleString("ro-RO", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
 
 const DEMO_MONTHLY_RETURNS = [
   0.018, -0.021, 0.026, 0.011, -0.014, 0.019, 0.007, -0.006, 0.024, 0.013,

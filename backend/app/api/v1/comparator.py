@@ -1,8 +1,9 @@
 from decimal import Decimal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.api.v1.schemas import APIModel
 from app.finance.depozit import CapitalizationMode, DepozitInput, simulate_depozit
 from app.finance.investitii import InvestitieInput, simulate_investitie
 from app.finance.unit_linked import UnitLinkedInput, simulate_unit_linked
@@ -10,7 +11,7 @@ from app.finance.unit_linked import UnitLinkedInput, simulate_unit_linked
 router = APIRouter(prefix="/comparator", tags=["comparator"])
 
 
-class ComparatorRequest(BaseModel):
+class ComparatorRequest(APIModel):
     principal: Decimal = Field(..., ge=0)
     monthly_contribution: Decimal = Field(Decimal("0"), ge=0)
     months: int = Field(..., gt=0, le=720)
@@ -28,14 +29,14 @@ class ComparatorRequest(BaseModel):
     holding_tax: Decimal = Field(Decimal("0.10"), ge=0, le=1)
 
 
-class ComparatorSeriesPoint(BaseModel):
+class ComparatorSeriesPoint(APIModel):
     month: int
     deposit: Decimal
     etf: Decimal
     unit_linked: Decimal
 
 
-class ComparatorProductSummary(BaseModel):
+class ComparatorProductSummary(APIModel):
     final_value_net: Decimal
     total_contributed: Decimal
     total_fees: Decimal
@@ -43,7 +44,7 @@ class ComparatorProductSummary(BaseModel):
     cagr_net: Decimal
 
 
-class ComparatorResponse(BaseModel):
+class ComparatorResponse(APIModel):
     deposit: ComparatorProductSummary
     etf: ComparatorProductSummary
     unit_linked: ComparatorProductSummary

@@ -1,14 +1,15 @@
 from decimal import Decimal
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.api.v1.schemas import APIModel
 from app.finance.unit_linked import UnitLinkedInput, simulate_unit_linked
 
 router = APIRouter(prefix="/unit-linked", tags=["unit-linked"])
 
 
-class UnitLinkedRequest(BaseModel):
+class UnitLinkedRequest(APIModel):
     initial_contribution: Decimal = Field(Decimal("0"), ge=0)
     monthly_premium: Decimal = Field(..., ge=0)
     months: int = Field(..., gt=0, le=720)
@@ -24,7 +25,7 @@ class UnitLinkedRequest(BaseModel):
     holding_tax: Decimal = Field(Decimal("0.10"), ge=0, le=1)
 
 
-class UnitLinkedRowResponse(BaseModel):
+class UnitLinkedRowResponse(APIModel):
     month: int
     gross_premium: Decimal
     fixed_fee: Decimal
@@ -38,7 +39,7 @@ class UnitLinkedRowResponse(BaseModel):
     closing_balance: Decimal
 
 
-class UnitLinkedResponse(BaseModel):
+class UnitLinkedResponse(APIModel):
     schedule: list[UnitLinkedRowResponse]
     total_premiums: Decimal
     total_invested: Decimal
@@ -56,17 +57,4 @@ class UnitLinkedResponse(BaseModel):
 @router.post("/simulate", response_model=UnitLinkedResponse)
 def simulate(req: UnitLinkedRequest) -> UnitLinkedResponse:
     result = simulate_unit_linked(UnitLinkedInput(**req.model_dump()))
-    return UnitLinkedResponse(
-        schedule=[UnitLinkedRowResponse(**row.__dict__) for row in result.schedule],
-        total_premiums=result.total_premiums,
-        total_invested=result.total_invested,
-        total_fixed_fees=result.total_fixed_fees,
-        total_allocation_fees=result.total_allocation_fees,
-        total_expense_recovery_fees=result.total_expense_recovery_fees,
-        total_fee_drag=result.total_fee_drag,
-        gross_value_final=result.gross_value_final,
-        tax=result.tax,
-        net_value_final=result.net_value_final,
-        net_gain=result.net_gain,
-        cagr_net=result.cagr_net,
-    )
+    return UnitLinkedResponse.model_validate(result)

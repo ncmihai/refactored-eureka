@@ -18,6 +18,8 @@ from typing import Literal
 import numpy as np
 from numpy.typing import NDArray
 
+from .common import annualized_return, tax_on_positive_gain
+
 getcontext().prec = 28
 
 
@@ -211,15 +213,9 @@ def simulate_investitie(inp: InvestitieInput) -> InvestitieResult:
 
     gross_value = balance
     gross_gain = gross_value - total_contrib_net
-    tax = gross_gain * inp.holding_tax if gross_gain > 0 else Decimal("0")
+    tax = tax_on_positive_gain(gross_gain, inp.holding_tax)
     net_value = gross_value - tax
     net_gain = net_value - total_contrib_gross
-
-    if total_contrib_gross > 0 and inp.months > 0:
-        years = Decimal(inp.months) / Decimal("12")
-        cagr = (net_value / total_contrib_gross) ** (Decimal("1") / years) - Decimal("1")
-    else:
-        cagr = Decimal("0")
 
     return InvestitieResult(
         schedule=schedule,
@@ -231,7 +227,7 @@ def simulate_investitie(inp: InvestitieInput) -> InvestitieResult:
         tax=tax,
         net_value_final=net_value,
         net_gain=net_gain,
-        cagr_net=cagr,
+        cagr_net=annualized_return(net_value, total_contrib_gross, inp.months),
         effective_annual_return=effective_annual,
     )
 

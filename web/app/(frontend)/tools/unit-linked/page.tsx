@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import { fetchProduseUL, type ProdusUL } from "@/lib/cms";
+import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
@@ -66,12 +67,6 @@ type UnitLinkedResponse = {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
-
-const fmt = (v: string | number, digits = 2) =>
-  Number(v).toLocaleString("ro-RO", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
 
 export default function UnitLinkedPage() {
   const [form, setForm] = useState({
