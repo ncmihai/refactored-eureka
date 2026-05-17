@@ -23,22 +23,22 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "Finance Platform — unelte financiare pentru consultanți",
+  title: "Finance Platform — calculatoare financiare clare",
   description:
-    "Simulatoare credit, depozit și optimizare financiară. Pentru consultanți și clienți care vor decizii bazate pe date.",
+    "Simulatoare credit, depozit, optimizare și investiții pentru oameni care vor decizii financiare mai clare.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Finance Platform — unelte financiare pentru consultanți",
+    title: "Finance Platform — calculatoare financiare clare",
     description:
-      "Simulatoare credit, depozit și optimizare financiară. Pentru consultanți și clienți care vor decizii bazate pe date.",
+      "Simulatoare credit, depozit, optimizare și investiții pentru oameni care vor decizii financiare mai clare.",
     type: "website",
     locale: "ro_RO",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Finance Platform — unelte financiare pentru consultanți",
+    title: "Finance Platform — calculatoare financiare clare",
     description:
-      "Simulatoare credit, depozit și optimizare financiară. Pentru consultanți și clienți care vor decizii bazate pe date.",
+      "Simulatoare credit, depozit, optimizare și investiții pentru oameni care vor decizii financiare mai clare.",
   },
 };
 

@@ -412,7 +412,7 @@ export default function InvestitiiETF() {
       <PageHeader
         eyebrow="Investiții · ETF / Unit-Linked"
         title="Acumulare investițională cu proiecții și Monte Carlo."
-        description="Alege ETF sau Unit-Linked, rulează determinist public, iar Monte Carlo rămâne sub-tool autentificat pentru consultanți. Rezultatele arată intervale și probabilități, nu promisiuni de randament."
+        description="Alege ETF sau Unit-Linked și pornește de la aceiași parametri: contribuție lunară, perioadă și costuri. Monte Carlo este disponibil după login și arată intervale, nu promisiuni de randament."
       />
 
       <div className="card p-2 inline-flex gap-2">

@@ -10,12 +10,12 @@ const tools = [
   {
     href: "/tools/credit",
     label: "Simulator Credit",
-    desc: "Scadențar, revizuire dobândă, rambursare anticipată",
+    desc: "Rată lunară, dobândă totală și rambursare anticipată",
   },
   {
     href: "/tools/optimizare",
     label: "Optimizare Credit",
-    desc: "Plată anticipată vs investiție paralelă",
+    desc: "Rambursare anticipată vs alte obiective",
   },
   {
     href: "/tools/depozit",
@@ -25,7 +25,7 @@ const tools = [
   {
     href: "/tools/investitii",
     label: "Investiții",
-    desc: "ETF și Unit-Linked într-un singur hub",
+    desc: "ETF și Unit-Linked pe aceiași parametri",
   },
   {
     href: "/tools/comparator",
@@ -43,8 +43,8 @@ const contentLinks = [
   },
   {
     href: "/demo",
-    label: "Cere demo",
-    desc: "Flow B2B cu simulări, share links și PDF white-label",
+    label: "Pentru firme",
+    desc: "Demo pentru echipe și rapoarte white-label",
   },
 ];
 

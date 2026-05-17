@@ -13,40 +13,40 @@ export const revalidate = 60;
 const principles = [
   {
     title: "Calcul transparent",
-    body: "Fiecare cifră are o formulă vizibilă. Fără cutie neagră. Paritate la 0.01 RON cu Excel-ul de referință.",
+    body: "Vezi cum se schimbă rezultatul când modifici suma, perioada, dobânda sau contribuția lunară.",
   },
   {
-    title: "Date piață live",
-    body: "Produsele bancare sunt în CMS, nu hardcodate. Când dobânzile se schimbă, un singur loc e de modificat.",
+    title: "Date ușor de urmărit",
+    body: "Dobânzile, produsele și ipotezele sunt separate clar, ca să știi ce compari și de unde vine rezultatul.",
   },
   {
-    title: "Fără vânzare agresivă",
-    body: "Uneltele arată adevărul matematic. Consultantul discută contextul. Clientul decide informat.",
+    title: "Fără presiune",
+    body: "Testezi scenarii în ritmul tău, fără promisiuni de randament și fără să fii împins spre o decizie.",
   },
 ];
 
 const stats = [
-  { value: "5", label: "Unelte live" },
-  { value: "28", label: "Produse CMS" },
-  { value: "0.01 RON", label: "Paritate Excel" },
-  { value: "86", label: "Teste matematice" },
+  { value: "5", label: "Calculatoare" },
+  { value: "28", label: "Exemple produse" },
+  { value: "0.01 RON", label: "Calcule precise" },
+  { value: "86", label: "Verificări automate" },
 ];
 
 const steps = [
   {
     n: "01",
     title: "Alegi unealta",
-    body: "Credit, depozit, optimizare sau investiții. Fiecare unealtă cere strict inputurile relevante — nu formulare bufer.",
+    body: "Credit, depozit, optimizare sau investiții. Fiecare calculator cere doar datele de care ai nevoie.",
   },
   {
     n: "02",
     title: "Completezi parametrii",
-    body: "Dobânzile și cursurile valutare vin pre-populate din CMS. Poți lucra pe scenarii alternative — o modificare, recalcul instant.",
+    body: "Schimbi suma, perioada, dobânda sau contribuția lunară și vezi imediat cum se modifică rezultatul.",
   },
   {
     n: "03",
-    title: "Exporți PDF cu logo firmă",
-    body: "White-label pentru clienți finali. Scadențarul complet, graficele și disclaimerul legal într-un singur document imprimabil.",
+    title: "Compari pe înțelesul tău",
+    body: "Primești grafice, tabele și rezultate-cheie suficient de clare ca să poți reveni asupra deciziei mai târziu.",
   },
 ];
 
@@ -89,8 +89,8 @@ export default async function Home() {
               fără bătăi de cap.
             </h1>
             <p className="reveal reveal-3 mt-6 text-lg md:text-xl text-[var(--muted)] leading-relaxed max-w-2xl">
-              Platformă de unelte pentru consultanți financiari și clienți
-              informați.
+              Platformă de unelte pentru oameni care vor să înțeleagă mai bine
+              creditele, economiile și investițiile.
             </p>
             <div className="reveal reveal-4 mt-8 flex flex-wrap items-center gap-3">
               <Link href="/tools/credit" className="btn-primary">
@@ -129,7 +129,7 @@ export default async function Home() {
               Unelte
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
-              Unelte clare, același limbaj.
+              Începe cu întrebarea ta de azi.
             </h2>
           </div>
         </div>
@@ -219,9 +219,8 @@ export default async function Home() {
               De ce platforma asta
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
-              Construită pentru{" "}
-              <span className="italic">conversații cinstite</span>, nu pentru
-              ochi și urechi.
+              Mai puțină ceață, mai multe{" "}
+              <span className="italic">scenarii concrete</span>.
             </h2>
           </div>
           <div className="grid gap-px bg-[var(--border)]">
@@ -242,21 +241,6 @@ export default async function Home() {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="card p-8 md:p-12 bg-gradient-to-br from-[var(--surface)] via-[var(--accent-soft)]/55 to-[var(--accent-soft)] border-[var(--accent)]/20">
-          <div className="max-w-2xl">
-            <h3 className="font-serif h-card tracking-tight">
-              Acum: Investiții ETF și Unit-Linked într-un singur hub.
-            </h3>
-            <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
-              ETF și UL pornesc din aceiași parametri de investiție. Monte Carlo
-              rămâne sub-tool pentru conturile active, iar comparatorul 3-way
-              este disponibil după login.
-            </p>
           </div>
         </div>
       </section>

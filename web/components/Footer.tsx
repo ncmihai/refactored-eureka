@@ -13,9 +13,8 @@ export function Footer() {
             <span className="font-medium">Finance Platform</span>
           </div>
           <p className="text-[var(--muted)] mt-3 max-w-sm leading-relaxed">
-            Unelte de analiză financiară pentru consultanți și clienți. Date
-            piață RO actualizate via CMS. Calcule transparente, fără cutie
-            neagră.
+            Calculatoare financiare pentru decizii de zi cu zi: credit,
+            economii și investiții explicate fără cutie neagră.
           </p>
         </div>
         <div>
@@ -30,9 +29,9 @@ export function Footer() {
         <div>
           <div className="font-medium mb-3">Platformă</div>
           <ul className="space-y-2 text-[var(--muted)]">
-            <li><a href="/admin" className="hover:text-[var(--foreground)]">Admin CMS</a></li>
+            <li><a href="/admin" className="hover:text-[var(--foreground)]">Intră în cont</a></li>
             <li><a href="/blog" className="hover:text-[var(--foreground)]">Blog educațional</a></li>
-            <li><a href="/demo" className="hover:text-[var(--foreground)]">Cere demo</a></li>
+            <li><a href="/demo" className="hover:text-[var(--foreground)]">Pentru firme</a></li>
           </ul>
           <div className="mt-5">
             <ThemeToggle />
@@ -44,7 +43,7 @@ export function Footer() {
           <p className="italic max-w-2xl">
             Acest instrument nu constituie consultanță financiară sau de
             investiții. Simulările sunt educative; verifică întotdeauna
-            condițiile contractuale cu banca sau consultantul tău.
+            condițiile contractuale cu banca sau cu un specialist autorizat.
           </p>
           <p>© {year} Finance Platform</p>
         </div>

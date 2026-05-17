@@ -150,7 +150,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 Demo B2B
               </div>
               <p className="text-sm text-[var(--muted)] leading-relaxed mt-2">
-                Vrei să vezi flow-ul complet cu simulări salvate, share link și PDF white-label?
+                Ai o firmă și vrei rapoarte, simulări salvate și share links pentru echipă?
               </p>
               <Link href="/demo" className="btn-secondary inline-flex mt-4">
                 Cere demo

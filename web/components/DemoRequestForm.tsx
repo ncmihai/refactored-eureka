@@ -81,7 +81,7 @@ export function DemoRequestForm({ sourcePath = '/demo' }: { sourcePath?: string 
           className="input min-h-32"
           value={form.message}
           onChange={(e) => update('message', e.target.value)}
-          placeholder="Ex: vreau să testez PDF-uri white-label pentru 3 consultanți."
+          placeholder="Ex: vreau să testez platforma pentru echipa mea."
         />
       </label>
       {status ? (

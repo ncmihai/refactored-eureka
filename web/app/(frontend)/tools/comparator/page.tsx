@@ -111,7 +111,7 @@ export default function ComparatorPage() {
         <PageHeader
           eyebrow="Comparator · cont"
           title="Comparatorul 3-way este disponibil după login."
-          description="Depozit vs ETF vs Unit-Linked pe același cash-flow rămâne o unealtă pentru consultanți și conturi active."
+          description="Depozit vs ETF vs Unit-Linked pe același cash-flow este disponibil pentru conturi active."
         />
         <div className="card p-6 md:p-8 bg-[var(--accent-soft)]/45 border-[var(--accent)]/20">
           <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xl">
