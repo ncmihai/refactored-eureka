@@ -24,6 +24,7 @@ export function Footer() {
             <li><a href="/tools/credit" className="hover:text-[var(--foreground)]">Simulator Credit</a></li>
             <li><a href="/tools/optimizare" className="hover:text-[var(--foreground)]">Optimizare Credit</a></li>
             <li><a href="/tools/depozit" className="hover:text-[var(--foreground)]">Depozit Bancar</a></li>
+            <li><a href="/tools/investitii" className="hover:text-[var(--foreground)]">Investiții</a></li>
           </ul>
         </div>
         <div>

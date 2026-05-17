@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { hasBetaAccess, type AuthStatus } from "@/lib/auth";
 import { fmt } from "@/lib/format";
 import { captureSimulation } from "@/lib/posthog";
+import { fetchAuthStatus } from "@/lib/simulari";
 import { SaveSimulationPanel } from "@/components/SaveSimulationPanel";
 import {
   CartesianGrid,
@@ -79,6 +82,49 @@ export default function ComparatorPage() {
     rateEurRon: 0,
     source: null,
   });
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
+
+  useEffect(() => {
+    fetchAuthStatus()
+      .then(setAuth)
+      .catch(() => setAuth({ authenticated: false, user: null }));
+  }, []);
+
+  if (auth === null) {
+    return (
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-8">
+        <PageHeader
+          eyebrow="Comparator · cont"
+          title="Se verifică accesul."
+          description="Comparatorul 3-way este disponibil pentru conturi active."
+        />
+        <div className="card p-6 text-sm text-[var(--muted)]">
+          Se verifică sesiunea...
+        </div>
+      </main>
+    );
+  }
+
+  if (!auth.authenticated || !hasBetaAccess(auth.user)) {
+    return (
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-8">
+        <PageHeader
+          eyebrow="Comparator · cont"
+          title="Comparatorul 3-way este disponibil după login."
+          description="Depozit vs ETF vs Unit-Linked pe același cash-flow rămâne o unealtă pentru consultanți și conturi active."
+        />
+        <div className="card p-6 md:p-8 bg-[var(--accent-soft)]/45 border-[var(--accent)]/20">
+          <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xl">
+            Intră în cont pentru a accesa comparatorul și pentru a salva
+            simulările în workspace.
+          </p>
+          <Link href="/admin" className="btn-primary inline-flex mt-5">
+            Intră în cont →
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   const update = <K extends keyof typeof form>(
     key: K,

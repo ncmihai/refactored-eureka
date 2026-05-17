@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { displayName, roleLabel, type AuthStatus } from "@/lib/auth";
+import { displayName, hasBetaAccess, roleLabel, type AuthStatus } from "@/lib/auth";
 import { fetchAuthStatus } from "@/lib/simulari";
 
 const tools = [
@@ -24,18 +24,14 @@ const tools = [
   },
   {
     href: "/tools/investitii",
-    label: "Investiții ETF",
-    desc: "SIP, TER, Monte Carlo și CAGR net",
-  },
-  {
-    href: "/tools/unit-linked",
-    label: "Unit-Linked",
-    desc: "Taxe alocare, unități inițiale și acumulare",
+    label: "Investiții",
+    desc: "ETF și Unit-Linked într-un singur hub",
   },
   {
     href: "/tools/comparator",
     label: "Comparator 3-way",
     desc: "Depozit vs ETF vs Unit-Linked",
+    accountOnly: true,
   },
 ];
 
@@ -58,6 +54,9 @@ export function Navbar() {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const anyActive = tools.some((t) => pathname?.startsWith(t.href));
+  const accountReady =
+    auth?.authenticated && auth.user ? hasBetaAccess(auth.user) : false;
+  const visibleTools = tools.filter((t) => !t.accountOnly || accountReady);
 
   useEffect(() => {
     fetchAuthStatus().then(setAuth).catch(() => {
@@ -145,7 +144,7 @@ export function Navbar() {
                 <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
                   Unelte
                 </div>
-                {tools.map((t) => {
+                {visibleTools.map((t) => {
                   const active = pathname?.startsWith(t.href);
                   return (
                     <Link

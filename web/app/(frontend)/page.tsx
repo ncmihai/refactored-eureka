@@ -1,43 +1,14 @@
 import Link from "next/link";
+import { getPayload } from "payload";
+import config from "@payload-config";
+import { BlogCard } from "@/components/blog/BlogCard";
+import { HomeToolsGrid } from "@/components/HomeToolsGrid";
+import {
+  formatBlogArticleCard,
+  type BlogArticleDoc,
+} from "@/lib/blog";
 
-const tools = [
-  {
-    href: "/tools/credit",
-    title: "Simulator Credit",
-    desc: "Scadențar complet cu anuități constante, revizuire dobândă la lună N, rambursare anticipată și comisioane.",
-    tag: "Credit",
-  },
-  {
-    href: "/tools/optimizare",
-    title: "Optimizare Credit",
-    desc: "Plată anticipată vs investiție paralelă. Identifică crossover-ul și oferă recomandarea numerică.",
-    tag: "Flagship",
-  },
-  {
-    href: "/tools/depozit",
-    title: "Depozit Bancar",
-    desc: "Capitalizare lunară sau la scadență, impozit 10% pe dobândă, contribuții recurente opționale.",
-    tag: "Economii",
-  },
-  {
-    href: "/tools/investitii",
-    title: "Investiții ETF",
-    desc: "Acumulare DCA pe termen lung, determinist sau Monte Carlo. TER, comisioane broker, impozit și CAGR net.",
-    tag: "Investiții",
-  },
-  {
-    href: "/tools/unit-linked",
-    title: "Unit-Linked",
-    desc: "Prime lunare, taxe de alocare, unități inițiale/acumulare și defalcare explicită a costurilor.",
-    tag: "UL",
-  },
-  {
-    href: "/tools/comparator",
-    title: "Comparator 3-way",
-    desc: "Depozit, ETF și Unit-Linked pe același cash-flow. Valoare netă, taxe, câștig și CAGR.",
-    tag: "Comparator",
-  },
-];
+export const revalidate = 60;
 
 const principles = [
   {
@@ -55,7 +26,7 @@ const principles = [
 ];
 
 const stats = [
-  { value: "6", label: "Unelte live" },
+  { value: "5", label: "Unelte live" },
   { value: "28", label: "Produse CMS" },
   { value: "0.01 RON", label: "Paritate Excel" },
   { value: "86", label: "Teste matematice" },
@@ -65,7 +36,7 @@ const steps = [
   {
     n: "01",
     title: "Alegi unealta",
-    body: "Credit, depozit, optimizare sau investiții ETF. Fiecare unealtă cere strict inputurile relevante — nu formulare bufer.",
+    body: "Credit, depozit, optimizare sau investiții. Fiecare unealtă cere strict inputurile relevante — nu formulare bufer.",
   },
   {
     n: "02",
@@ -79,51 +50,74 @@ const steps = [
   },
 ];
 
-export default function Home() {
+async function fetchLatestArticles() {
+  try {
+    const payload = await getPayload({ config });
+    const result = await payload.find({
+      collection: "continut-educational",
+      sort: "-publishedAt",
+      depth: 1,
+      limit: 6,
+    });
+    return (result.docs as BlogArticleDoc[]).map(formatBlogArticleCard);
+  } catch (error) {
+    console.error("Homepage latest articles failed:", error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const latestArticles = await fetchLatestArticles();
+
   return (
     <main className="flex-1">
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
-        <div className="max-w-3xl">
-          <span className="pill reveal reveal-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-            Piața RO · date actualizate 2026
-          </span>
-          <h1 className="reveal reveal-2 mt-6 h-hero font-serif tracking-tight">
-            Decizii financiare{" "}
-            <span className="italic text-[var(--accent)]">limpezi,</span>
-            <br />
-            sprijinite de matematică.
-          </h1>
-          <p className="reveal reveal-3 mt-6 text-lg md:text-xl text-[var(--muted)] leading-relaxed max-w-2xl">
-            Platformă de unelte pentru consultanți financiari și clienți
-            informați. Simulări reproductibile, dobânzi reale, fără promisiuni
-            de randament.
-          </p>
-          <div className="reveal reveal-4 mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/tools/credit" className="btn-primary">
-              Deschide Simulator Credit →
-            </Link>
-            <Link href="/tools/optimizare" className="btn-ghost">
-              sau încearcă Optimizarea
-            </Link>
-          </div>
-        </div>
-
-        <dl className="reveal reveal-5 mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--border)] border border-[var(--border)] rounded-lg overflow-hidden">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="bg-[var(--background)] px-5 py-4 md:px-6 md:py-5"
-            >
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted-2)]">
-                {s.label}
-              </dt>
-              <dd className="stat-value mt-1.5 text-2xl md:text-3xl leading-none">
-                {s.value}
-              </dd>
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,var(--accent-soft),transparent)]"
+        />
+        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
+          <div className="max-w-3xl">
+            <span className="pill reveal reveal-1 bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              Piața RO · date actualizate 2026
+            </span>
+            <h1 className="reveal reveal-2 mt-6 h-hero font-serif tracking-tight">
+              Decizii financiare{" "}
+              <span className="italic text-[var(--accent)]">limpezi,</span>
+              <br />
+              fără bătăi de cap.
+            </h1>
+            <p className="reveal reveal-3 mt-6 text-lg md:text-xl text-[var(--muted)] leading-relaxed max-w-2xl">
+              Platformă de unelte pentru consultanți financiari și clienți
+              informați.
+            </p>
+            <div className="reveal reveal-4 mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/tools/credit" className="btn-primary">
+                Deschide Simulator Credit →
+              </Link>
+              <Link href="/tools/optimizare" className="btn-ghost">
+                sau încearcă Optimizarea
+              </Link>
             </div>
-          ))}
-        </dl>
+          </div>
+
+          <dl className="reveal reveal-5 mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--accent)]/30 border border-[var(--accent)]/20 rounded-lg overflow-hidden">
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                className="bg-[var(--background)] px-5 py-4 md:px-6 md:py-5"
+              >
+                <dt className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted-2)]">
+                  {s.label}
+                </dt>
+                <dd className="stat-value mt-1.5 text-2xl md:text-3xl leading-none text-[var(--accent)]">
+                  {s.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
       <div className="divider max-w-6xl mx-auto" />
@@ -135,31 +129,51 @@ export default function Home() {
               Unelte
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
-              Patru calculatoare, un singur limbaj.
+              Unelte clare, același limbaj.
             </h2>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tools.map((t, i) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={`card card-hover p-6 group block reveal reveal-${i + 2}`}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <span className="pill">{t.tag}</span>
-                <span className="text-[var(--muted-2)] group-hover:text-[var(--accent)] transition-colors text-lg">
-                  →
-                </span>
-              </div>
-              <h3 className="font-serif text-2xl tracking-tight">{t.title}</h3>
-              <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
-                {t.desc}
-              </p>
-            </Link>
-          ))}
+        <HomeToolsGrid />
+      </section>
+
+      <div className="divider max-w-6xl mx-auto" />
+
+      <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+          <div>
+            <div className="text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
+              Blog
+            </div>
+            <h2 className="font-serif h-section mt-2 tracking-tight">
+              Ultimele articole educaționale.
+            </h2>
+          </div>
+          <Link href="/blog" className="btn-secondary self-start md:self-auto">
+            Vezi blogul →
+          </Link>
         </div>
+
+        {latestArticles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {latestArticles.map((article) => (
+              <BlogCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="card p-8 md:p-10 border-[var(--accent)]/20 bg-[var(--accent-soft)]/45">
+            <div className="max-w-xl">
+              <h3 className="font-serif h-card tracking-tight">
+                Articolele vor apărea aici după publicare.
+              </h3>
+              <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
+                Secțiunea rămâne vizibilă ca spațiu de conținut pentru SEO și
+                educație financiară. Primele materiale pot fi publicate direct
+                din Payload.
+              </p>
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="divider max-w-6xl mx-auto" />
@@ -233,15 +247,15 @@ export default function Home() {
       </section>
 
       <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="card p-8 md:p-12 bg-gradient-to-br from-[var(--surface)] to-[var(--accent-soft)]">
+        <div className="card p-8 md:p-12 bg-gradient-to-br from-[var(--surface)] via-[var(--accent-soft)]/55 to-[var(--accent-soft)] border-[var(--accent)]/20">
           <div className="max-w-2xl">
             <h3 className="font-serif h-card tracking-tight">
-              Acum: ETF cu Monte Carlo, Unit-Linked și comparator 3-way.
+              Acum: Investiții ETF și Unit-Linked într-un singur hub.
             </h3>
             <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
-              Fan chart P10/P50/P90 pe ETF, simulare Unit-Linked cu taxe
-              explicite și comparație Depozit / ETF / UL pe același cash-flow.
-              Următorul pas este conectarea randamentelor istorice reale din CMS.
+              ETF și UL pornesc din aceiași parametri de investiție. Monte Carlo
+              rămâne sub-tool pentru conturile active, iar comparatorul 3-way
+              este disponibil după login.
             </p>
           </div>
         </div>
