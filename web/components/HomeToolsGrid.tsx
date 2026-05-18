@@ -58,17 +58,17 @@ export function HomeToolsGrid() {
         <Link
           key={tool.href}
           href={tool.href}
-          className={`card card-hover p-6 group block reveal reveal-${i + 2}`}
+          className={`card card-hover home-tool-card p-6 group block reveal reveal-${i + 2}`}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="relative flex items-center justify-between mb-6">
             <span className="pill bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/20">
               {tool.tag}
             </span>
-            <span className="text-[var(--accent)] transition-colors text-lg">
+            <span className="home-tool-arrow text-[var(--accent)] transition-colors text-lg">
               →
             </span>
           </div>
-          <h3 className="font-serif text-2xl tracking-tight">{tool.title}</h3>
+          <h3 className="relative font-serif text-2xl tracking-tight">{tool.title}</h3>
           <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">
             {tool.desc}
           </p>

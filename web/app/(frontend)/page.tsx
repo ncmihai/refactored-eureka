@@ -74,7 +74,7 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,var(--accent-soft),transparent)]"
+          className="absolute inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--accent-soft)_88%,transparent),transparent)]"
         />
         <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24">
           <div className="max-w-3xl">
@@ -106,7 +106,7 @@ export default async function Home() {
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="bg-[var(--background)] px-5 py-4 md:px-6 md:py-5"
+                className="home-stat px-5 py-4 md:px-6 md:py-5"
               >
                 <dt className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted-2)]">
                   {s.label}
@@ -125,7 +125,7 @@ export default async function Home() {
       <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-[var(--muted-2)]">
+            <div className="section-kicker">
               Unelte
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
@@ -142,7 +142,7 @@ export default async function Home() {
       <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
+            <div className="section-kicker">
               Blog
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
@@ -181,7 +181,7 @@ export default async function Home() {
       <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-[var(--muted-2)]">
+            <div className="section-kicker">
               Flux
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">
@@ -215,7 +215,7 @@ export default async function Home() {
       <section className="max-w-6xl mx-auto px-6 py-16 md:py-24">
         <div className="grid md:grid-cols-[1fr_1.6fr] gap-10">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-[var(--muted-2)]">
+            <div className="section-kicker">
               De ce platforma asta
             </div>
             <h2 className="font-serif h-section mt-2 tracking-tight">

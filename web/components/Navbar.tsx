@@ -85,18 +85,18 @@ export function Navbar() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="w-6 h-6 rounded-md bg-[var(--foreground)] text-white grid place-items-center text-[10px] font-semibold tracking-wider">
+    <header className="sticky top-0 z-40 px-3 pt-3">
+      <div className="glass-nav max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between">
+        <Link href="/" className="relative z-10 flex items-center gap-2 group rounded-xl px-2 py-1.5 transition-colors hover:text-[var(--accent)]">
+          <span className="glass-brand-mark w-6 h-6 rounded-md text-white grid place-items-center text-[10px] font-semibold tracking-wider">
             FP
           </span>
-          <span className="text-sm font-medium tracking-tight group-hover:text-[var(--accent)] transition-colors">
+          <span className="text-sm font-medium tracking-tight transition-colors">
             Finance Platform
           </span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="relative z-10 flex items-center gap-2">
           {auth === null ? (
             <span
               className="hidden sm:inline-flex h-8 w-32 rounded-md bg-[var(--accent-soft)] animate-pulse"
@@ -104,7 +104,7 @@ export function Navbar() {
             />
           ) : auth.authenticated && auth.user ? (
             <>
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
+              <span className="glass-button hidden sm:inline-flex items-center gap-1.5 text-xs text-[var(--muted)] rounded-xl px-2.5 py-1.5">
                 <span className="max-w-[140px] truncate">
                   {displayName(auth.user)}
                 </span>
@@ -112,7 +112,7 @@ export function Navbar() {
               </span>
             </>
           ) : (
-            <Link href="/admin" className="btn-ghost text-sm">
+            <Link href="/admin" className="btn-ghost glass-button text-sm">
               Intră
             </Link>
           )}
@@ -123,8 +123,8 @@ export function Navbar() {
               aria-haspopup="menu"
               aria-expanded={open}
               aria-label="Deschide meniul aplicației"
-              className="btn-ghost h-9 w-9 p-0 grid place-items-center"
-              data-active={anyActive || undefined}
+              className="btn-ghost glass-button h-9 w-9 p-0 grid place-items-center"
+              data-active={anyActive ? "true" : undefined}
             >
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                 <path
@@ -139,7 +139,7 @@ export function Navbar() {
             {open && (
               <div
                 role="menu"
-                className="absolute right-0 mt-2 w-[min(360px,calc(100vw-2rem))] card p-2 shadow-lg bg-[var(--background)]"
+                className="glass-menu absolute right-0 mt-2 w-[min(360px,calc(100vw-2rem))] p-2"
               >
                 <div className="px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
                   Unelte
@@ -151,11 +151,8 @@ export function Navbar() {
                       key={t.href}
                       href={t.href}
                       role="menuitem"
-                      className={`block px-3 py-2.5 rounded-md transition-colors ${
-                        active
-                          ? "bg-[var(--accent-soft)]"
-                          : "hover:bg-[var(--accent-soft)]/50"
-                      }`}
+                      className="glass-menu-item block px-3 py-2.5 rounded-md"
+                      data-active={active ? "true" : undefined}
                     >
                       <div
                         className={`text-sm font-medium ${
@@ -184,11 +181,8 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       role="menuitem"
-                      className={`block px-3 py-2.5 rounded-md transition-colors ${
-                        active
-                          ? "bg-[var(--accent-soft)]"
-                          : "hover:bg-[var(--accent-soft)]/50"
-                      }`}
+                      className="glass-menu-item block px-3 py-2.5 rounded-md"
+                      data-active={active ? "true" : undefined}
                     >
                       <div
                         className={`text-sm font-medium ${
@@ -219,7 +213,7 @@ export function Navbar() {
                     <Link
                       href="/simulari"
                       role="menuitem"
-                      className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                      className="glass-menu-item block px-3 py-2.5 rounded-md"
                     >
                       <div className="text-sm font-medium">Simulări salvate</div>
                       <div className="text-[11px] text-[var(--muted)] mt-0.5">
@@ -229,7 +223,7 @@ export function Navbar() {
                     <Link
                       href="/admin"
                       role="menuitem"
-                      className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                      className="glass-menu-item block px-3 py-2.5 rounded-md"
                     >
                       <div className="text-sm font-medium">Admin</div>
                       <div className="text-[11px] text-[var(--muted)] mt-0.5">
@@ -241,7 +235,7 @@ export function Navbar() {
                   <Link
                     href="/admin"
                     role="menuitem"
-                    className="block px-3 py-2.5 rounded-md hover:bg-[var(--accent-soft)]/50"
+                    className="glass-menu-item block px-3 py-2.5 rounded-md"
                   >
                     <div className="text-sm font-medium">Intră în admin</div>
                     <div className="text-[11px] text-[var(--muted)] mt-0.5">
