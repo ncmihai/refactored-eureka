@@ -68,8 +68,9 @@
  * Fluid root font-size (viewport-responsive).
  * Body grows modestly on wider monitors so content feels calibrated,
  * not zoomed-out, when a consultant opens the app on a 24"/27" display.
- * - Viewport 1024px  → ~15.4px
- * - Viewport 1280px  → ~15.8px
+ * - Mobile           → 16px floor for touch readability
+ * - Viewport 1024px  → ~16px
+ * - Viewport 1280px  → ~16px
  * - Viewport 1440px  → ~16.0px (matches previous baseline)
  * - Viewport 1920px  → ~16.7px
  * - Viewport 2560px  → ~17.6px
@@ -77,7 +78,9 @@
  * Every rem-based size (Tailwind's text-*, spacing, max-w) scales with this.
  */
 html {
-  font-size: clamp(15px, 14px + 0.14vw, 18px);
+  font-size: clamp(16px, 14px + 0.14vw, 18px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -731,5 +734,67 @@ body {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    line-height: 1.55;
+  }
+
+  .h-hero {
+    font-size: clamp(2.45rem, 2.08rem + 1.35vw, 3rem);
+    line-height: 1.03;
+  }
+
+  .h-section {
+    font-size: clamp(2rem, 1.72rem + 0.85vw, 2.35rem);
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .glass-button {
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.7rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn-ghost {
+    padding: 0.625rem 0.85rem;
+    font-size: 0.9375rem;
+  }
+
+  .input {
+    min-height: 2.75rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 1rem;
+  }
+
+  .preset-chip {
+    min-height: 2rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .pill,
+  .section-kicker,
+  .theme-toggle {
+    font-size: 0.8125rem;
+  }
+
+  .glass-table table {
+    font-size: 0.8125rem;
+  }
+
+  .glass-table th {
+    font-size: 0.75rem;
   }
 }
