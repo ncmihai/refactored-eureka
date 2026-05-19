@@ -11,6 +11,7 @@ router = APIRouter(prefix="/credit", tags=["credit"])
 class CreditRequest(CreditTermsRequest):
     monthly_prepayment: Decimal = Decimal("0")
     prepayment_mode: PrepaymentMode = PrepaymentMode.REDUCE_PERIOD
+    prepayment_schedule: dict[int, Decimal] | None = None
 
 
 class AmortizationRowResponse(APIModel):

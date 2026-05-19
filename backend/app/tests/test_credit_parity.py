@@ -71,3 +71,22 @@ def test_no_prepayment_total_principal_equals_initial(excel_credit_input: Credit
     result = simulate_credit(excel_credit_input)
     total_principal = sum(row.principal_paid for row in result.schedule)
     assert _close(total_principal, excel_credit_input.principal)
+
+
+def test_custom_prepayment_schedule_overrides_selected_months(
+    excel_credit_input: CreditInput,
+) -> None:
+    result = simulate_credit(
+        CreditInput(
+            **{
+                **excel_credit_input.__dict__,
+                "monthly_prepayment": Decimal("0"),
+                "prepayment_schedule": {3: Decimal("1000")},
+            }
+        )
+    )
+
+    assert result.schedule[1].prepayment == Decimal("0")
+    assert result.schedule[2].prepayment == Decimal("1000")
+    base = simulate_credit(excel_credit_input)
+    assert result.total_interest < base.total_interest

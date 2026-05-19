@@ -29,6 +29,7 @@ class CreditInput:
     grace_months: int = 0
     monthly_prepayment: Decimal = Decimal("0")
     prepayment_mode: PrepaymentMode = PrepaymentMode.REDUCE_PERIOD
+    prepayment_schedule: dict[int, Decimal] | None = None
 
 
 @dataclass
@@ -108,8 +109,14 @@ def simulate_credit(inp: CreditInput) -> CreditResult:
             new_balance = balance - principal_paid
         prepayment = Decimal("0")
 
-        if inp.monthly_prepayment > 0 and new_balance > 0 and month > inp.grace_months:
-            prepayment = min(inp.monthly_prepayment, new_balance)
+        scheduled_prepayment = (
+            inp.prepayment_schedule.get(month, inp.monthly_prepayment)
+            if inp.prepayment_schedule is not None
+            else inp.monthly_prepayment
+        )
+
+        if scheduled_prepayment > 0 and new_balance > 0 and month > inp.grace_months:
+            prepayment = min(scheduled_prepayment, new_balance)
             new_balance -= prepayment
             if inp.prepayment_mode == PrepaymentMode.REDUCE_RATE and new_balance > 0:
                 remaining = inp.months - month

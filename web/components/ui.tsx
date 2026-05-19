@@ -63,31 +63,54 @@ export function Field({
   value,
   onChange,
   step = 1,
+  presets,
 }: {
   label: string;
   suffix?: string;
   value: number;
   onChange: (v: number) => void;
   step?: number;
+  presets?: { label: string; value: number }[];
 }) {
+  const inputId = React.useId();
+
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
-      <span className="text-[var(--foreground)] font-medium">
+    <div className="flex flex-col gap-1.5 text-sm">
+      <label htmlFor={inputId} className="text-[var(--foreground)] font-medium">
         {label}
         {suffix && (
           <span className="text-[var(--muted-2)] ml-1 font-normal">
             {suffix}
           </span>
         )}
-      </span>
+      </label>
       <input
+        id={inputId}
         type="number"
         step={step}
         className="input tabular-nums"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-    </label>
+      {presets && presets.length > 0 && (
+        <span className="flex flex-wrap gap-1.5 pt-1">
+          {presets.map((preset) => (
+            <button
+              key={`${label}-${preset.label}-${preset.value}`}
+              type="button"
+              className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+                value === preset.value
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)]/50"
+              }`}
+              onClick={() => onChange(preset.value)}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </span>
+      )}
+    </div>
   );
 }
 

@@ -10,21 +10,6 @@ import {
 
 export const revalidate = 60;
 
-const principles = [
-  {
-    title: "Calcul transparent",
-    body: "Vezi cum se schimbă rezultatul când modifici suma, perioada, dobânda sau contribuția lunară.",
-  },
-  {
-    title: "Date ușor de urmărit",
-    body: "Dobânzile, produsele și ipotezele sunt separate clar, ca să știi ce compari și de unde vine rezultatul.",
-  },
-  {
-    title: "Fără presiune",
-    body: "Testezi scenarii în ritmul tău, fără promisiuni de randament și fără să fii împins spre o decizie.",
-  },
-];
-
 const stats = [
   { value: "5", label: "Calculatoare" },
   { value: "28", label: "Exemple produse" },
@@ -210,39 +195,6 @@ export default async function Home() {
             </li>
           ))}
         </ol>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-6 py-16 md:py-24">
-        <div className="grid md:grid-cols-[1fr_1.6fr] gap-10">
-          <div>
-            <div className="section-kicker">
-              De ce platforma asta
-            </div>
-            <h2 className="font-serif h-section mt-2 tracking-tight">
-              Mai puțină ceață, mai multe{" "}
-              <span className="italic">scenarii concrete</span>.
-            </h2>
-          </div>
-          <div className="grid gap-px bg-[var(--border)]">
-            {principles.map((p, i) => (
-              <div
-                key={p.title}
-                className={`bg-[var(--background)] p-6 reveal reveal-${i + 2}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden
-                    className="h-px w-6 bg-[var(--accent)]"
-                  />
-                  <h3 className="font-medium">{p.title}</h3>
-                </div>
-                <p className="text-sm text-[var(--muted)] mt-2.5 leading-relaxed">
-                  {p.body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
     </main>
   );

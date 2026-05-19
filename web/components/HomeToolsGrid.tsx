@@ -13,12 +13,6 @@ const tools = [
     tag: "Credit",
   },
   {
-    href: "/tools/optimizare",
-    title: "Optimizare Credit",
-    desc: "Compară rambursarea anticipată cu păstrarea banilor pentru alte obiective.",
-    tag: "Decizie",
-  },
-  {
     href: "/tools/depozit",
     title: "Depozit Bancar",
     desc: "Calculează dobânda netă, impozitul și efectul capitalizării pe o sumă concretă.",

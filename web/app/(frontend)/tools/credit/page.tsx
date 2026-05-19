@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Area,
@@ -60,6 +61,8 @@ type CreditResponse = {
   months_to_close: number;
 };
 
+type PrepaymentSchedule = Record<number, number>;
+
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 const DEFAULT_IRCC_RATE = 5.8;
@@ -77,6 +80,10 @@ export default function CreditSimulator() {
     prepayment_mode: "reduce_period" as "reduce_period" | "reduce_rate",
   });
   const [result, setResult] = useState<CreditResponse | null>(null);
+  const [draftPrepayments, setDraftPrepayments] = useState<PrepaymentSchedule>(
+    {},
+  );
+  const [scheduleDirty, setScheduleDirty] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProdusCredit[]>([]);
@@ -138,8 +145,15 @@ export default function CreditSimulator() {
 
   const selectedProduct = products.find((x) => String(x.id) === selectedProductId);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const prefillDraftPrepayments = (schedule: AmortizationRow[]) => {
+    setDraftPrepayments(
+      Object.fromEntries(
+        schedule.map((row) => [row.month, Number(row.prepayment)]),
+      ),
+    );
+  };
+
+  const runSimulation = async (prepaymentSchedule?: PrepaymentSchedule) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -159,6 +173,10 @@ export default function CreditSimulator() {
         grace_months: form.grace_months,
         monthly_prepayment: form.monthly_prepayment,
         prepayment_mode: form.prepayment_mode,
+        prepayment_schedule:
+          prepaymentSchedule && Object.keys(prepaymentSchedule).length > 0
+            ? prepaymentSchedule
+            : null,
       };
       const res = await fetch(`${BACKEND_URL}/api/v1/credit/simulate`, {
         method: "POST",
@@ -171,6 +189,8 @@ export default function CreditSimulator() {
         ? { creditProduct: selectedProduct }
         : undefined;
       setResult(response);
+      prefillDraftPrepayments(response.schedule);
+      setScheduleDirty(false);
       setLastProductSnapshots(productSnapshots);
       setLastInputSnapshot({
         form,
@@ -188,6 +208,34 @@ export default function CreditSimulator() {
     }
   };
 
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDraftPrepayments({});
+    setScheduleDirty(false);
+    await runSimulation();
+  };
+
+  const editPrepayment = (month: number, value: number) => {
+    setDraftPrepayments((current) => ({ ...current, [month]: value }));
+    setScheduleDirty(true);
+  };
+
+  const resetDraftPrepayments = () => {
+    if (result) prefillDraftPrepayments(result.schedule);
+    setScheduleDirty(false);
+  };
+
+  const confirmPrepaymentSchedule = async () => {
+    if (!result) return;
+    const schedule = Object.fromEntries(
+      result.schedule.map((row) => [
+        row.month,
+        draftPrepayments[row.month] ?? Number(row.prepayment),
+      ]),
+    );
+    await runSimulation(schedule);
+  };
+
   return (
     <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-10">
       <PageHeader
@@ -195,6 +243,20 @@ export default function CreditSimulator() {
         title="Scadențar complet cu revizuire și rambursare anticipată."
         description='Vezi evoluția soldului lună de lună, rata inițială și rata după revizuirea dobânzii. Rambursare anticipată cu toggle „reduce perioada” sau „reduce rata”.'
       />
+
+      <div className="card p-4 reveal reveal-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
+            Sub-tool credit
+          </div>
+          <p className="text-sm text-[var(--muted)] mt-1">
+            Compară rambursarea anticipată cu investiția aceleiași sume.
+          </p>
+        </div>
+        <Link href="/tools/optimizare" className="btn-secondary self-start">
+          Deschide Optimizare →
+        </Link>
+      </div>
 
       <ProductPicker
         label="Produs bancar"
@@ -216,12 +278,23 @@ export default function CreditSimulator() {
           suffix="€"
           value={form.principal}
           onChange={(v) => update("principal", v)}
+          presets={[
+            { label: "50k", value: 50000 },
+            { label: "100k", value: 100000 },
+            { label: "150k", value: 150000 },
+            { label: "+10k", value: form.principal + 10000 },
+          ]}
         />
         <Field
           label="Perioadă"
           suffix="luni"
           value={form.months}
           onChange={(v) => update("months", v)}
+          presets={[
+            { label: "120", value: 120 },
+            { label: "240", value: 240 },
+            { label: "360", value: 360 },
+          ]}
         />
         <Field
           label="Dobândă inițială"
@@ -229,12 +302,22 @@ export default function CreditSimulator() {
           step={0.01}
           value={form.annual_rate_initial}
           onChange={(v) => update("annual_rate_initial", v)}
+          presets={[
+            { label: "4,9%", value: 4.9 },
+            { label: "5,9%", value: 5.9 },
+            { label: "7,5%", value: 7.5 },
+          ]}
         />
         <Field
           label="Revizuire la luna"
           suffix="(0 = fără)"
           value={form.revision_month}
           onChange={(v) => update("revision_month", v)}
+          presets={[
+            { label: "0", value: 0 },
+            { label: "36", value: 36 },
+            { label: "60", value: 60 },
+          ]}
         />
         <Field
           label="Dobândă după revizuire"
@@ -242,24 +325,45 @@ export default function CreditSimulator() {
           step={0.01}
           value={form.annual_rate_after}
           onChange={(v) => update("annual_rate_after", v)}
+          presets={[
+            { label: "0%", value: 0 },
+            { label: "7,76%", value: 7.76 },
+            { label: "9%", value: 9 },
+          ]}
         />
         <Field
           label="Perioadă grație"
           suffix="luni"
           value={form.grace_months}
           onChange={(v) => update("grace_months", v)}
+          presets={[
+            { label: "0", value: 0 },
+            { label: "3", value: 3 },
+            { label: "6", value: 6 },
+          ]}
         />
         <Field
-          label="Plată anticipată lunară"
+          label="Plată anticipată constantă"
           suffix="€"
           value={form.monthly_prepayment}
           onChange={(v) => update("monthly_prepayment", v)}
+          presets={[
+            { label: "0", value: 0 },
+            { label: "100", value: 100 },
+            { label: "250", value: 250 },
+            { label: "500", value: 500 },
+          ]}
         />
         <Field
           label="Comision lunar"
           suffix="€"
           value={form.monthly_fee}
           onChange={(v) => update("monthly_fee", v)}
+          presets={[
+            { label: "0", value: 0 },
+            { label: "10", value: 10 },
+            { label: "25", value: 25 },
+          ]}
         />
         <Select
           label="Mod plată anticipată"
@@ -446,35 +550,85 @@ export default function CreditSimulator() {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <TableCard>
-                <thead className="bg-[var(--background)] sticky top-0 border-b border-[var(--border)]">
-                  <tr>
-                    <Th>Luna</Th>
-                    <Th>Sold inițial</Th>
-                    <Th>Anuitate</Th>
-                    <Th>Principal</Th>
-                    <Th>Dobândă</Th>
-                    <Th>Plată anticipată</Th>
-                    <Th>Sold final</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.schedule.map((r) => (
-                    <tr
-                      key={r.month}
-                      className="border-t border-[var(--border)] hover:bg-[var(--accent-soft)]/30"
-                    >
-                      <Td>{r.month}</Td>
-                      <Td>{fmt(conv(Number(r.opening_balance)))}</Td>
-                      <Td>{fmt(conv(Number(r.annuity)))}</Td>
-                      <Td>{fmt(conv(Number(r.principal_paid)))}</Td>
-                      <Td>{fmt(conv(Number(r.interest_paid)))}</Td>
-                      <Td>{fmt(conv(Number(r.prepayment)))}</Td>
-                      <Td>{fmt(conv(Number(r.closing_balance)))}</Td>
+              <div className="relative">
+                <TableCard>
+                  <thead className="bg-[var(--background)] sticky top-0 border-b border-[var(--border)]">
+                    <tr>
+                      <Th>Luna</Th>
+                      <Th>Sold inițial</Th>
+                      <Th>Anuitate</Th>
+                      <Th>Principal</Th>
+                      <Th>Dobândă</Th>
+                      <Th>Plată anticipată</Th>
+                      <Th>Sold final</Th>
                     </tr>
-                  ))}
-                </tbody>
-              </TableCard>
+                  </thead>
+                  <tbody>
+                    {result.schedule.map((r) => (
+                      <tr
+                        key={r.month}
+                        className="border-t border-[var(--border)] hover:bg-[var(--accent-soft)]/30"
+                      >
+                        <Td>{r.month}</Td>
+                        <Td>{fmt(conv(Number(r.opening_balance)))}</Td>
+                        <Td>{fmt(conv(Number(r.annuity)))}</Td>
+                        <Td>{fmt(conv(Number(r.principal_paid)))}</Td>
+                        <Td>{fmt(conv(Number(r.interest_paid)))}</Td>
+                        <Td>
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            className="input h-8 min-w-[96px] py-1 text-xs tabular-nums"
+                            aria-label={`Plată anticipată luna ${r.month}`}
+                            value={
+                              draftPrepayments[r.month] ?? Number(r.prepayment)
+                            }
+                            onChange={(e) =>
+                              editPrepayment(r.month, Number(e.target.value))
+                            }
+                          />
+                        </Td>
+                        <Td>{fmt(conv(Number(r.closing_balance)))}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </TableCard>
+
+                {scheduleDirty && (
+                  <div className="fixed left-1/2 bottom-5 z-50 w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-strong)] p-3 shadow-2xl backdrop-blur">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium">
+                          Scadențar modificat
+                        </div>
+                        <p className="text-xs text-[var(--muted)] mt-0.5">
+                          Confirmă ca să recalculăm soldul și graficul cu
+                          plățile anticipate editate.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={resetDraftPrepayments}
+                          disabled={loading}
+                        >
+                          Anulează
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={confirmPrepaymentSchedule}
+                          disabled={loading}
+                        >
+                          {loading ? "Recalculez…" : "Confirmă"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Disclaimer modul="credit" />
               <DisclaimerNote>

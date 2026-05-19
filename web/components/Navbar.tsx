@@ -13,11 +13,6 @@ const tools = [
     desc: "Rată lunară, dobândă totală și rambursare anticipată",
   },
   {
-    href: "/tools/optimizare",
-    label: "Optimizare Credit",
-    desc: "Rambursare anticipată vs alte obiective",
-  },
-  {
     href: "/tools/depozit",
     label: "Depozit Bancar",
     desc: "Capitalizare lunară sau la scadență, impozit pe dobândă",
@@ -123,10 +118,16 @@ export function Navbar() {
               aria-haspopup="menu"
               aria-expanded={open}
               aria-label="Deschide meniul aplicației"
-              className="btn-ghost glass-button h-9 w-9 p-0 grid place-items-center"
+              className="btn-ghost glass-button h-9 w-9 p-0 flex items-center justify-center"
               data-active={anyActive ? "true" : undefined}
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <svg
+                className="block shrink-0"
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                aria-hidden="true"
+              >
                 <path
                   d="M3 5h12M3 9h12M3 13h12"
                   fill="none"

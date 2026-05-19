@@ -196,7 +196,7 @@ export default function OptimizareCredit() {
   return (
     <main className="flex-1 max-w-6xl mx-auto px-6 py-10 md:py-14 space-y-10">
       <PageHeader
-        eyebrow="Flagship · Optimizare"
+        eyebrow="Credit · Sub-tool"
         title="Rambursare anticipată sau investiție paralelă?"
         description="Compară A (plătești mai mult la credit) cu B (investești aceeași sumă). Vezi anul de crossover și recomandarea matematică pe orizontul ales."
       />
