@@ -81,8 +81,8 @@ export default async function Home() {
               <Link href="/tools/credit" className="btn-primary">
                 Deschide Simulator Credit →
               </Link>
-              <Link href="/tools/optimizare" className="btn-ghost">
-                sau încearcă Optimizarea
+              <Link href="/tools/investitii" className="btn-ghost">
+                sau vezi Investițiile
               </Link>
             </div>
           </div>

@@ -38,7 +38,7 @@ export function Stat({
 }) {
   return (
     <div
-      className={`card p-5 ${accent ? "bg-[var(--accent-soft)] border-[var(--accent)]/20" : ""}`}
+      className={`card glass-card p-5 ${accent ? "border-[var(--accent)]/20" : ""}`}
     >
       <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
         {label}
@@ -98,10 +98,8 @@ export function Field({
             <button
               key={`${label}-${preset.label}-${preset.value}`}
               type="button"
-              className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
-                value === preset.value
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)]/50"
+              className={`preset-chip ${
+                value === preset.value ? "preset-chip-active" : ""
               }`}
               onClick={() => onChange(preset.value)}
             >
@@ -160,7 +158,7 @@ export function ProductPicker<T extends { id: string | number }>({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="card p-4 reveal reveal-3 flex items-center gap-4 flex-wrap">
+    <div className="card glass-panel p-4 reveal reveal-3 flex items-center gap-4 flex-wrap">
       <div>
         <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)]">
           {label}
@@ -211,7 +209,7 @@ export function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="card p-5">
+    <div className="card glass-panel p-5">
       <div className="text-xs uppercase tracking-[0.12em] text-[var(--muted-2)] mb-3">
         {title}
       </div>
@@ -222,7 +220,7 @@ export function ChartCard({
 
 export function TableCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="card overflow-hidden">
+    <div className="card glass-table overflow-hidden">
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full text-xs">{children}</table>
       </div>
